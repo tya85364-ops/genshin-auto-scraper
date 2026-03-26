@@ -1,0 +1,806 @@
+{
+  "meta": {
+    "title": "原神角色強度 Tier 榜（多語言綜合版）",
+    "version": "2026-03",
+    "game_version": "6.4.x / V5.7",
+    "sources": [
+      "genshin-builds.com/cn",
+      "17173.com",
+      "7724.com",
+      "findingdulcinea.com",
+      "sportsdunia.com",
+      "ofzenandcomputing.com"
+    ],
+    "generated_at": "2026-03-21T14:39:00+08:00"
+  },
+  "tierSS": [
+    {
+      "name": "芙寧娜",
+      "name_en": "Furina",
+      "element": "水",
+      "weapon": "單手劍",
+      "role": "副C/輔助",
+      "rarity": 5,
+      "consensus": 6
+    },
+    {
+      "name": "瑪薇卡",
+      "name_en": "Mavuika",
+      "element": "火",
+      "weapon": "長柄武器",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 6
+    },
+    {
+      "name": "那維萊特",
+      "name_en": "Neuvillette",
+      "element": "水",
+      "weapon": "法器",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 5
+    },
+    {
+      "name": "鐘離",
+      "name_en": "Zhongli",
+      "element": "岩",
+      "weapon": "長柄武器",
+      "role": "輔助/護盾",
+      "rarity": 5,
+      "consensus": 6
+    },
+    {
+      "name": "納西妲",
+      "name_en": "Nahida",
+      "element": "草",
+      "weapon": "法器",
+      "role": "副C/輔助",
+      "rarity": 5,
+      "consensus": 6
+    },
+    {
+      "name": "楓原萬葉",
+      "name_en": "Kazuha",
+      "element": "風",
+      "weapon": "單手劍",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 5
+    },
+    {
+      "name": "夜蘭",
+      "name_en": "Yelan",
+      "element": "水",
+      "weapon": "弓",
+      "role": "副C",
+      "rarity": 5,
+      "consensus": 5
+    },
+    {
+      "name": "班尼特",
+      "name_en": "Bennett",
+      "element": "火",
+      "weapon": "單手劍",
+      "role": "輔助",
+      "rarity": 4,
+      "consensus": 5
+    }
+  ],
+  "tierS": [
+    {
+      "name": "阿蕾奇諾",
+      "name_en": "Arlecchino",
+      "element": "火",
+      "weapon": "長柄武器",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 5
+    },
+    {
+      "name": "雷電將軍",
+      "name_en": "Raiden Shogun",
+      "element": "雷",
+      "weapon": "長柄武器",
+      "role": "副C/爆發",
+      "rarity": 5,
+      "consensus": 5
+    },
+    {
+      "name": "菲林斯",
+      "name_en": "Flins",
+      "element": "水",
+      "weapon": "單手劍",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 4
+    },
+    {
+      "name": "奈芙爾",
+      "name_en": "Nefer",
+      "element": "水",
+      "weapon": "法器",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 4
+    },
+    {
+      "name": "茲白",
+      "name_en": "Zibai",
+      "element": "岩",
+      "weapon": "單手劍",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 4
+    },
+    {
+      "name": "絲柯克",
+      "name_en": "Skirk",
+      "element": "雷",
+      "weapon": "單手劍",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 4
+    },
+    {
+      "name": "恰斯卡",
+      "name_en": "Chasca",
+      "element": "風",
+      "weapon": "弓",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 4
+    },
+    {
+      "name": "基尼奇",
+      "name_en": "Kinich",
+      "element": "草",
+      "weapon": "長柄武器",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "希諾寧",
+      "name_en": "Xilonen",
+      "element": "岩",
+      "weapon": "單手劍",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "愛可菲",
+      "name_en": "Escoffier",
+      "element": "水",
+      "weapon": "單手劍",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "哥倫比婭",
+      "name_en": "Columbina",
+      "element": "水",
+      "weapon": "法器",
+      "role": "輔助/副C",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "伊芙",
+      "name_en": "Ineffa",
+      "element": "水",
+      "weapon": "法器",
+      "role": "副C",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "杜林",
+      "name_en": "Durin",
+      "element": "雷",
+      "weapon": "法器",
+      "role": "副C",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "菈烏瑪",
+      "name_en": "Lauma",
+      "element": "水",
+      "weapon": "單手劍",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "瓦雷莎",
+      "name_en": "Varesa",
+      "element": "雷",
+      "weapon": "長柄武器",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "法爾伽",
+      "name_en": "Varka",
+      "element": "風",
+      "weapon": "雙手劍",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 2
+    }
+  ],
+  "tierA": [
+    {
+      "name": "瑪拉妮",
+      "name_en": "Mualani",
+      "element": "水",
+      "weapon": "法器",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 5
+    },
+    {
+      "name": "克洛琳德",
+      "name_en": "Clorinde",
+      "element": "雷",
+      "weapon": "單手劍",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 4
+    },
+    {
+      "name": "娜維婭",
+      "name_en": "Navia",
+      "element": "岩",
+      "weapon": "雙手劍",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 4
+    },
+    {
+      "name": "艾爾海森",
+      "name_en": "Alhaitham",
+      "element": "草",
+      "weapon": "單手劍",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 4
+    },
+    {
+      "name": "神里綾華",
+      "name_en": "Ayaka",
+      "element": "冰",
+      "weapon": "單手劍",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 5
+    },
+    {
+      "name": "甘雨",
+      "name_en": "Ganyu",
+      "element": "冰",
+      "weapon": "弓",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 4
+    },
+    {
+      "name": "胡桃",
+      "name_en": "Hu Tao",
+      "element": "火",
+      "weapon": "長柄武器",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 5
+    },
+    {
+      "name": "萊歐斯利",
+      "name_en": "Wriothesley",
+      "element": "冰",
+      "weapon": "法器",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 4
+    },
+    {
+      "name": "林尼",
+      "name_en": "Lyney",
+      "element": "火",
+      "weapon": "弓",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 4
+    },
+    {
+      "name": "魈",
+      "name_en": "Xiao",
+      "element": "風",
+      "weapon": "長柄武器",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 4
+    },
+    {
+      "name": "溫迪",
+      "name_en": "Venti",
+      "element": "風",
+      "weapon": "弓",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 4
+    },
+    {
+      "name": "珊瑚宮心海",
+      "name_en": "Kokomi",
+      "element": "水",
+      "weapon": "法器",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 4
+    },
+    {
+      "name": "八重神子",
+      "name_en": "Yae Miko",
+      "element": "雷",
+      "weapon": "法器",
+      "role": "副C",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "流浪者",
+      "name_en": "Wanderer",
+      "element": "風",
+      "weapon": "法器",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 4
+    },
+    {
+      "name": "達達利亞",
+      "name_en": "Tartaglia",
+      "element": "水",
+      "weapon": "弓",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 4
+    },
+    {
+      "name": "申鶴",
+      "name_en": "Shenhe",
+      "element": "冰",
+      "weapon": "長柄武器",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "白術",
+      "name_en": "Baizhu",
+      "element": "草",
+      "weapon": "法器",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "阿貝多",
+      "name_en": "Albedo",
+      "element": "岩",
+      "weapon": "單手劍",
+      "role": "副C",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "妮露",
+      "name_en": "Nilou",
+      "element": "水",
+      "weapon": "單手劍",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "艾梅莉埃",
+      "name_en": "Emilie",
+      "element": "草",
+      "weapon": "長柄武器",
+      "role": "副C",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "莫娜",
+      "name_en": "Mona",
+      "element": "水",
+      "weapon": "法器",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "閒雲",
+      "name_en": "Xianyun",
+      "element": "風",
+      "weapon": "法器",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "賽索斯",
+      "name_en": "Sethos",
+      "element": "雷",
+      "weapon": "弓",
+      "role": "副C",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "嘉明",
+      "name_en": "Gaming",
+      "element": "火",
+      "weapon": "單手劍",
+      "role": "主C",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "菲謝爾",
+      "name_en": "Fischl",
+      "element": "雷",
+      "weapon": "弓",
+      "role": "副C",
+      "rarity": 4,
+      "consensus": 2
+    }
+  ],
+  "tierB": [
+    {
+      "name": "迪盧克",
+      "name_en": "Diluc",
+      "element": "火",
+      "weapon": "雙手劍",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 4
+    },
+    {
+      "name": "宵宮",
+      "name_en": "Yoimiya",
+      "element": "火",
+      "weapon": "弓",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 4
+    },
+    {
+      "name": "荒瀧一斗",
+      "name_en": "Itto",
+      "element": "岩",
+      "weapon": "雙手劍",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 4
+    },
+    {
+      "name": "賽諾",
+      "name_en": "Cyno",
+      "element": "雷",
+      "weapon": "長柄武器",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "提納里",
+      "name_en": "Tighnari",
+      "element": "草",
+      "weapon": "弓",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "優菈",
+      "name_en": "Eula",
+      "element": "冰",
+      "weapon": "雙手劍",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "神裡綾人",
+      "name_en": "Ayato",
+      "element": "水",
+      "weapon": "單手劍",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "久岐忍",
+      "name_en": "Kuki Shinobu",
+      "element": "雷",
+      "weapon": "單手劍",
+      "role": "輔助",
+      "rarity": 4,
+      "consensus": 3
+    },
+    {
+      "name": "砂糖",
+      "name_en": "Sucrose",
+      "element": "風",
+      "weapon": "法器",
+      "role": "輔助",
+      "rarity": 4,
+      "consensus": 3
+    },
+    {
+      "name": "行秋",
+      "name_en": "Xingqiu",
+      "element": "水",
+      "weapon": "單手劍",
+      "role": "副C",
+      "rarity": 4,
+      "consensus": 3
+    },
+    {
+      "name": "香菱",
+      "name_en": "Xiangling",
+      "element": "火",
+      "weapon": "長柄武器",
+      "role": "副C",
+      "rarity": 4,
+      "consensus": 3
+    }
+  ],
+  "tierC": [
+    {
+      "name": "刻晴",
+      "name_en": "Keqing",
+      "element": "雷",
+      "weapon": "單手劍",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "諾艾爾",
+      "name_en": "Noelle",
+      "element": "岩",
+      "weapon": "雙手劍",
+      "role": "主C/輔助",
+      "rarity": 4,
+      "consensus": 3
+    },
+    {
+      "name": "凝光",
+      "name_en": "Ningguang",
+      "element": "岩",
+      "weapon": "法器",
+      "role": "主C",
+      "rarity": 4,
+      "consensus": 3
+    },
+    {
+      "name": "七七",
+      "name_en": "Qiqi",
+      "element": "冰",
+      "weapon": "單手劍",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "芭芭拉",
+      "name_en": "Barbara",
+      "element": "水",
+      "weapon": "法器",
+      "role": "輔助",
+      "rarity": 4,
+      "consensus": 3
+    },
+    {
+      "name": "可莉",
+      "name_en": "Klee",
+      "element": "火",
+      "weapon": "法器",
+      "role": "主C",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "煙緋",
+      "name_en": "Yanfei",
+      "element": "火",
+      "weapon": "法器",
+      "role": "主C",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "雷澤",
+      "name_en": "Razor",
+      "element": "雷",
+      "weapon": "雙手劍",
+      "role": "主C",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "北斗",
+      "name_en": "Beidou",
+      "element": "雷",
+      "weapon": "雙手劍",
+      "role": "副C",
+      "rarity": 4,
+      "consensus": 2
+    }
+  ],
+  "tierD": [
+    {
+      "name": "埃洛伊",
+      "name_en": "Aloy",
+      "element": "冰",
+      "weapon": "弓",
+      "role": "副C",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "旅行者（風）",
+      "name_en": "Traveler (Anemo)",
+      "element": "風",
+      "weapon": "單手劍",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "旅行者（雷）",
+      "name_en": "Traveler (Electro)",
+      "element": "雷",
+      "weapon": "單手劍",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "旅行者（水）",
+      "name_en": "Traveler (Hydro)",
+      "element": "水",
+      "weapon": "單手劍",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "旅行者（岩）",
+      "name_en": "Traveler (Geo)",
+      "element": "岩",
+      "weapon": "單手劍",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "安柏",
+      "name_en": "Amber",
+      "element": "火",
+      "weapon": "弓",
+      "role": "副C",
+      "rarity": 4,
+      "consensus": 3
+    },
+    {
+      "name": "麗莎",
+      "name_en": "Lisa",
+      "element": "雷",
+      "weapon": "法器",
+      "role": "輔助",
+      "rarity": 4,
+      "consensus": 3
+    },
+    {
+      "name": "凱亞",
+      "name_en": "Kaeya",
+      "element": "冰",
+      "weapon": "單手劍",
+      "role": "副C",
+      "rarity": 4,
+      "consensus": 3
+    },
+    {
+      "name": "迪奧娜",
+      "name_en": "Diona",
+      "element": "冰",
+      "weapon": "弓",
+      "role": "輔助",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "羅莎莉亞",
+      "name_en": "Rosaria",
+      "element": "冰",
+      "weapon": "長柄武器",
+      "role": "副C",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "重雲",
+      "name_en": "Chongyun",
+      "element": "冰",
+      "weapon": "雙手劍",
+      "role": "輔助",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "辛焱",
+      "name_en": "Xinyan",
+      "element": "火",
+      "weapon": "雙手劍",
+      "role": "輔助",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "多莉",
+      "name_en": "Dori",
+      "element": "雷",
+      "weapon": "法器",
+      "role": "輔助",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "坎蒂絲",
+      "name_en": "Candace",
+      "element": "水",
+      "weapon": "長柄武器",
+      "role": "輔助",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "柯萊",
+      "name_en": "Kuki Shinobu",
+      "element": "草",
+      "weapon": "弓",
+      "role": "副C",
+      "rarity": 4,
+      "consensus": 2
+    }
+  ],
+  "highValueFor8591": [
+    "芙寧娜",
+    "瑪薇卡",
+    "那維萊特",
+    "納西妲",
+    "鐘離",
+    "楓原萬葉",
+    "夜蘭",
+    "阿蕾奇諾",
+    "雷電將軍",
+    "菲林斯",
+    "奈芙爾",
+    "茲白",
+    "絲柯克",
+    "恰斯卡"
+  ],
+  "notes": {
+    "consensus": "來源共識分（1-6），分數越高代表跨來源一致性越高",
+    "龍王警訊": "那維萊特在大陸 DPS 榜跌出前五，價格可能輕微回落",
+    "新角漲幅": "菲林斯、奈芙爾、茲白等新強角報價持續攀升",
+    "四星奇蹟": "班尼特、行秋、香菱、砂糖、菲謝爾、旅行者（草）為四星必練"
+  }
+}

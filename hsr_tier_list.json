@@ -1,0 +1,714 @@
+{
+  "meta": {
+    "title": "崩壞：星穹鐵道 角色強度 Tier 榜（多語言綜合版）",
+    "version": "2026-03",
+    "game_version": "4.x",
+    "sources": [
+      "genshin-builds.com/cn",
+      "ofzenandcomputing.com",
+      "lawod.com",
+      "7724.com"
+    ],
+    "generated_at": "2026-03-21T15:20:00+08:00"
+  },
+  "tierSS": [
+    {
+      "name": "白厄",
+      "name_en": "Phainon",
+      "path": "記憶",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 4
+    },
+    {
+      "name": "遐蝶",
+      "name_en": "Castorice",
+      "path": "記憶",
+      "role": "副DPS",
+      "rarity": 5,
+      "consensus": 4
+    },
+    {
+      "name": "那刻夏",
+      "name_en": "Anaxa",
+      "path": "毀滅",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "大黑塔",
+      "name_en": "The Herta",
+      "path": "智識",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 4
+    },
+    {
+      "name": "星期日",
+      "name_en": "Sunday",
+      "path": "同諧",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 4
+    },
+    {
+      "name": "緹寶",
+      "name_en": "Tribbie",
+      "path": "同諧",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "長夜月",
+      "name_en": "Hyacine",
+      "path": "豐饒",
+      "role": "存護/治療",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "花火",
+      "name_en": "Sparkle",
+      "path": "同諧",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "風堇",
+      "name_en": "Evernight",
+      "path": "虛無",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "丹恒•騰荒",
+      "name_en": "March 7th (The Hunt)",
+      "path": "獵人",
+      "role": "副DPS",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "藿藿",
+      "name_en": "Huohuo",
+      "path": "豐饒",
+      "role": "治療",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "飛霄",
+      "name_en": "Feixiao",
+      "path": "獵人",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "昔漣",
+      "name_en": "Phylaria",
+      "path": "記憶",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "忘歸人",
+      "name_en": "Wanderer",
+      "path": "虛無",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "三月七•巡獵",
+      "name_en": "March 7th",
+      "path": "巡獵",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "開拓者•記憶",
+      "name_en": "Trailblazer",
+      "path": "記憶",
+      "role": "副DPS",
+      "rarity": 5,
+      "consensus": 3
+    }
+  ],
+  "tierS": [
+    {
+      "name": "昔蓮",
+      "name_en": "Fugue",
+      "path": "毀滅",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "爻光",
+      "name_en": "Jiaoqiu",
+      "path": "虛無",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "阮•梅",
+      "name_en": "Ruan Mei",
+      "path": "同諧",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 4
+    },
+    {
+      "name": "知更鳥",
+      "name_en": "Robin",
+      "path": "同諧",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 4
+    },
+    {
+      "name": "黃泉",
+      "name_en": "Acheron",
+      "path": "虛無",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 4
+    },
+    {
+      "name": "萬敵",
+      "name_en": "Mydei",
+      "path": "毀滅",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "流螢",
+      "name_en": "Firefly",
+      "path": "毀滅",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 4
+    },
+    {
+      "name": "賽飛兒",
+      "name_en": "Cipher",
+      "path": "虛無",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "刻律德菈",
+      "name_en": "Cerydra",
+      "path": "同諧",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "大麗花",
+      "name_en": "Constance",
+      "path": "毀滅",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "雲璃",
+      "name_en": "Yunli",
+      "path": "毀滅",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "布洛妮婭",
+      "name_en": "Bronya",
+      "path": "同諧",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "刃",
+      "name_en": "Blade",
+      "path": "毀滅",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "卡芙卡",
+      "name_en": "Kafka",
+      "path": "虛無",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "黑天鵝",
+      "name_en": "Black Swan",
+      "path": "虛無",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "加拉赫",
+      "name_en": "Gallegher",
+      "path": "豐饒",
+      "role": "治療",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "砂金",
+      "name_en": "Aventurine",
+      "path": "存護",
+      "role": "存護",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "翡翠",
+      "name_en": "Jade",
+      "path": "智識",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "靈砂",
+      "name_en": "Lingsha",
+      "path": "豐饒",
+      "role": "治療",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "阿格萊雅",
+      "name_en": "Aglaea",
+      "path": "記憶",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "Archer",
+      "name_en": "Archer",
+      "path": "巡獵",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "Saber",
+      "name_en": "Saber",
+      "path": "毀滅",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "銀狼",
+      "name_en": "Silver Wolf",
+      "path": "虛無",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "海瑟音",
+      "name_en": "Hesha",
+      "path": "虛無",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 2
+    }
+  ],
+  "tierA": [
+    {
+      "name": "鏡流",
+      "name_en": "Jingliu",
+      "path": "毀滅",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "波提歐",
+      "name_en": "Boothill",
+      "path": "獵人",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "銀枝",
+      "name_en": "Argenti",
+      "path": "智識",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "托帕&賬賬",
+      "name_en": "Topaz & Numby",
+      "path": "獵人",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "椒丘",
+      "name_en": "Jiaoqiu",
+      "path": "虛無",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "符玄",
+      "name_en": "Fu Xuan",
+      "path": "存護",
+      "role": "存護",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "佩拉",
+      "name_en": "Pela",
+      "path": "虛無",
+      "role": "輔助",
+      "rarity": 4,
+      "consensus": 3
+    },
+    {
+      "name": "羅剎",
+      "name_en": "Luocha",
+      "path": "豐饒",
+      "role": "治療",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "三月七•虛數",
+      "name_en": "Trailblazer (Ice)",
+      "path": "存護",
+      "role": "存護",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "貊澤",
+      "name_en": "Moze",
+      "path": "獵人",
+      "role": "DPS",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "真理醫生",
+      "name_en": "Dr. Ratio",
+      "path": "獵人",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "希兒",
+      "name_en": "Seele",
+      "path": "獵人",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "丹恒•飲月",
+      "name_en": "Dan Heng IL",
+      "path": "毀滅",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "姬子",
+      "name_en": "Himeko",
+      "path": "智識",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "克拉拉",
+      "name_en": "Clara",
+      "path": "毀滅",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "艾絲妲",
+      "name_en": "Asta",
+      "path": "同諧",
+      "role": "輔助",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "傑帕德",
+      "name_en": "Gepard",
+      "path": "存護",
+      "role": "存護",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "白露",
+      "name_en": "Bailu",
+      "path": "豐饒",
+      "role": "治療",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "黑塔",
+      "name_en": "Herta",
+      "path": "虛無",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "瓦爾特",
+      "name_en": "Welt",
+      "path": "虛無",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "桂乃芬",
+      "name_en": "Guinaifen",
+      "path": "虛無",
+      "role": "DPS",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "玲可",
+      "name_en": "Lynx",
+      "path": "豐饒",
+      "role": "治療",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "寒鴉",
+      "name_en": "Yukong",
+      "path": "同諧",
+      "role": "輔助",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "雪衣",
+      "name_en": "Xueyi",
+      "path": "毀滅",
+      "role": "DPS",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "景元",
+      "name_en": "Jing Yuan",
+      "path": "智識",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "亂破",
+      "name_en": "Rappa",
+      "path": "智識",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "開拓者•同諧",
+      "name_en": "Trailblazer",
+      "path": "同諧",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 2
+    }
+  ],
+  "tierB": [
+    {
+      "name": "娜塔莎",
+      "name_en": "Natasha",
+      "path": "豐饒",
+      "role": "治療",
+      "rarity": 4,
+      "consensus": 3
+    },
+    {
+      "name": "青雀",
+      "name_en": "Qingque",
+      "path": "智識",
+      "role": "DPS",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "開拓者•存護",
+      "name_en": "Trailblazer (Preservation)",
+      "path": "存護",
+      "role": "存護",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "希露瓦",
+      "name_en": "Serval",
+      "path": "智識",
+      "role": "DPS",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "虎克",
+      "name_en": "Hook",
+      "path": "毀滅",
+      "role": "DPS",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "彥卿",
+      "name_en": "Yanqing",
+      "path": "獵人",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "馭空",
+      "name_en": "Yukong",
+      "path": "同諧",
+      "role": "輔助",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "米沙",
+      "name_en": "Misha",
+      "path": "毀滅",
+      "role": "DPS",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "盧卡",
+      "name_en": "Luka",
+      "path": "虛無",
+      "role": "DPS",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "桑博",
+      "name_en": "Sampo",
+      "path": "虛無",
+      "role": "DPS",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "丹恒",
+      "name_en": "Dan Heng",
+      "path": "獵人",
+      "role": "DPS",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "素裳",
+      "name_en": "Sushang",
+      "path": "獵人",
+      "role": "DPS",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "停雲",
+      "name_en": "Tingyun",
+      "path": "同諧",
+      "role": "輔助",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "三月七•存護",
+      "name_en": "March 7th",
+      "path": "存護",
+      "role": "存護",
+      "rarity": 4,
+      "consensus": 2
+    }
+  ],
+  "tierC": [
+    {
+      "name": "開拓者•毀滅",
+      "name_en": "Trailblazer (Destruction)",
+      "path": "毀滅",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "阿蘭",
+      "name_en": "Arlan",
+      "path": "毀滅",
+      "role": "DPS",
+      "rarity": 4,
+      "consensus": 2
+    }
+  ],
+  "tierD": [],
+  "highValueFor8591": [
+    "白厄",
+    "遐蝶",
+    "那刻夏",
+    "大黑塔",
+    "星期日",
+    "緹寶",
+    "阮•梅",
+    "知更鳥",
+    "黃泉",
+    "飛霄",
+    "刃",
+    "銀狼",
+    "卡芙卡",
+    "黑天鵝",
+    "砂金",
+    "流螢",
+    "符玄"
+  ],
+  "notes": {
+    "consensus": "來源共識分（1-4），分數越高代表跨來源一致性越高",
+    "版本加強預告": "流螢、藿藿、希兒、瓦爾特將在4.2版本獲得加強",
+    "回退警示": "希兒（Seele）已跌至D-Tier，曾經的版本寵兒被新機制邊緣化",
+    "四星必練": "停雲、佩拉、三月七、青雀、艾絲妲為四星核心"
+  }
+}

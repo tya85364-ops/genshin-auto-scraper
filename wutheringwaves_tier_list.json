@@ -1,0 +1,426 @@
+{
+  "meta": {
+    "title": "鳴潮 / Wuthering Waves 角色強度 Tier 榜（多語言綜合版）",
+    "version": "2026-03",
+    "game_version": "3.2",
+    "sources": [
+      "7724.com",
+      "gensakuwomitai.net (JP)",
+      "game8.co",
+      "pockettactics.com"
+    ],
+    "generated_at": "2026-03-21T15:20:00+08:00",
+    "note": "名稱已對照維基百科官方譯名修正"
+  },
+  "tierSS": [
+    {
+      "name": "守岸人",
+      "name_en": "Shorekeeper",
+      "element": "空無",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 4
+    },
+    {
+      "name": "弗洛洛",
+      "name_en": "Phrolova",
+      "element": "導電",
+      "role": "副DPS/輔助",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "奧古斯塔",
+      "name_en": "Augusta",
+      "element": "異能",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "卡提希婭",
+      "name_en": "Cartethyia",
+      "element": "聚合",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "埃萊特",
+      "name_en": "Aemeath",
+      "element": "融合",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "卡羅莎",
+      "name_en": "Ciaccona",
+      "element": "氣動",
+      "role": "副DPS",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "菲比",
+      "name_en": "Phoebe",
+      "element": "光譜",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "嘉貝莉娜",
+      "name_en": "Galbrena",
+      "element": "融合",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "維里奈",
+      "name_en": "Verina",
+      "element": "光譜",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "贊妮",
+      "name_en": "Zani",
+      "element": "湮滅",
+      "role": "副DPS",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "琳奈",
+      "name_en": "Lynae",
+      "element": "聚合",
+      "role": "副DPS",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "莫妮",
+      "name_en": "Mornye",
+      "element": "星芒",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "布蘭特",
+      "name_en": "Brant",
+      "element": "融合",
+      "role": "輔助",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "西格莉卡",
+      "name_en": "Sigrika",
+      "element": "氣動",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 2
+    }
+  ],
+  "tierS": [
+    {
+      "name": "吟霖",
+      "name_en": "Yinlin",
+      "element": "導電",
+      "role": "副DPS",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "忌炎",
+      "name_en": "Jiyan",
+      "element": "氣動",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "椿",
+      "name_en": "Camellya",
+      "element": "熱熔",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "卡卡羅",
+      "name_en": "Calcharo",
+      "element": "導電",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "長離",
+      "name_en": "Changli",
+      "element": "融合",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "折枝",
+      "name_en": "Zhezhi",
+      "element": "衍射",
+      "role": "副DPS",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "今汐",
+      "name_en": "Jinhsi",
+      "element": "衍射",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "凌陽",
+      "name_en": "Xiangli Yao",
+      "element": "星芒",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "安可",
+      "name_en": "Encore",
+      "element": "冷凝",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "珂萊塔",
+      "name_en": "Carlotta",
+      "element": "聚合",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 3
+    },
+    {
+      "name": "洛可可",
+      "name_en": "Roccia",
+      "element": "湮滅",
+      "role": "副DPS",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "鉴心",
+      "name_en": "Jianxin",
+      "element": "氣動",
+      "role": "副DPS",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "尤諾",
+      "name_en": "Iuno",
+      "element": "聚合",
+      "role": "副DPS",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "盧卡",
+      "name_en": "Luuk Herssen",
+      "element": "光譜",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "露帕",
+      "name_en": "Lupa",
+      "element": "聚合",
+      "role": "副DPS",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "仇遠",
+      "name_en": "Qiu Yuan",
+      "element": "湮滅",
+      "role": "副DPS",
+      "rarity": 5,
+      "consensus": 2
+    }
+  ],
+  "tierA": [
+    {
+      "name": "漂泊者·星芒",
+      "name_en": "Rover (Spectro)",
+      "element": "星芒",
+      "role": "副DPS",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "漂泊者·湮滅",
+      "name_en": "Rover (Havoc)",
+      "element": "湮滅",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "桃祈",
+      "name_en": "Taoqi",
+      "element": "星芒",
+      "role": "副DPS",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "武僕",
+      "name_en": "Mortefi",
+      "element": "融合",
+      "role": "副DPS",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "丹瑾",
+      "name_en": "Danjin",
+      "element": "熱熔",
+      "role": "DPS",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "燈燈",
+      "name_en": "Lumi",
+      "element": "導電",
+      "role": "副DPS",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "釉瑚",
+      "name_en": "Youhu",
+      "element": "冷凝",
+      "role": "輔助",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "凌霄",
+      "name_en": "Lingyang",
+      "element": "聚合",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "秋水",
+      "name_en": "Aalto",
+      "element": "冷凝",
+      "role": "副DPS",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "千咲",
+      "name_en": "Chisa",
+      "element": "湮滅",
+      "role": "DPS",
+      "rarity": 5,
+      "consensus": 2
+    }
+  ],
+  "tierB": [
+    {
+      "name": "白芷",
+      "name_en": "Baizhi",
+      "element": "星芒",
+      "role": "輔助",
+      "rarity": 4,
+      "consensus": 3
+    },
+    {
+      "name": "熾霞",
+      "name_en": "Chixia",
+      "element": "熱熔",
+      "role": "DPS",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "秧秧",
+      "name_en": "Yangyang",
+      "element": "氣動",
+      "role": "副DPS",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "漂泊者·氣動",
+      "name_en": "Rover (Aero)",
+      "element": "氣動",
+      "role": "副DPS",
+      "rarity": 5,
+      "consensus": 2
+    },
+    {
+      "name": "卜靈",
+      "name_en": "Buling",
+      "element": "氣動",
+      "role": "輔助",
+      "rarity": 4,
+      "consensus": 2
+    }
+  ],
+  "tierC": [
+    {
+      "name": "散華",
+      "name_en": "Sanhua",
+      "element": "冷凝",
+      "role": "副DPS",
+      "rarity": 4,
+      "consensus": 2
+    },
+    {
+      "name": "淵武",
+      "name_en": "Yuanwu",
+      "element": "導電",
+      "role": "副DPS",
+      "rarity": 4,
+      "consensus": 2
+    }
+  ],
+  "tierD": [],
+  "highValueFor8591": [
+    "守岸人",
+    "弗洛洛",
+    "奧古斯塔",
+    "卡提希婭",
+    "埃萊特",
+    "菲比",
+    "卡羅莎",
+    "椿",
+    "長離",
+    "今汐",
+    "卡卡羅",
+    "忌炎",
+    "嘉貝莉娜",
+    "贊妮",
+    "西格莉卡"
+  ],
+  "notes": {
+    "consensus": "來源共識分（1-4），分數越高代表跨來源一致性越高",
+    "名稱修正": "已對照維基百科修正：菲芙芙→菲比、弗洛娃→維里奈、瓊瑤→贊妮、露娜→琳奈、凱菈→椿、甘菈→嘉貝莉娜、佐依→折枝、蓮娜→珂萊塔、格蘭遠→嘉貝莉娜",
+    "新角警訊": "西格莉卡（Sigrika）為3.2新登頂SS，需持續觀察後續評價",
+    "版本變動": "長離、羅耶璐從S降至A，忌炎降至B（3.2版本更新）",
+    "新手推薦": "新手無腦抽守岸人、莫妮（回血+buff全能），免費送的單月也能用"
+  }
+}

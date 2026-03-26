@@ -1,0 +1,24 @@
+# GCP 私鑰（絕對不能 commit）
+gcp_key.json
+
+# 動態資料 JSON（Railway 上由 MongoDB 取代，不需上傳）
+price_tracker.json
+gs_*.json
+ww_*.json
+sr_*.json
+listing_seen.json
+
+# Excel 輸出（雲端不需要）
+*.xlsx
+
+# 其他輔助腳本（不需部署）
+check_new.py
+check_selectors.py
+import_history.py
+1.3 -version.txt
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.env
