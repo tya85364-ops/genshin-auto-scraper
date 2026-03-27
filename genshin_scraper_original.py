@@ -460,6 +460,158 @@ def save_price_tracker(tracker):
         with open(PRICE_TRACKER_FILE, "w", encoding="utf-8") as f:
             json.dump(tracker, f, ensure_ascii=False, indent=2)
 
+# ===================== 快速首發監控（不開 Playwright，直打 HTML）=====================
+
+try:
+    from bs4 import BeautifulSoup
+    HAS_BS4 = True
+except ImportError:
+    HAS_BS4 = False
+
+# 快速監控：只抓第一頁，比 Playwright 快 10x
+_FAST_TRACK_SESSION = None
+
+def _get_fast_session():
+    global _FAST_TRACK_SESSION
+    if _FAST_TRACK_SESSION is None:
+        import requests as _req
+        s = _req.Session()
+        s.verify = False
+        s.headers.update({
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+            "Accept-Language": "zh-TW,zh;q=0.9",
+            "Referer": "https://www.8591.com.tw/",
+        })
+        _FAST_TRACK_SESSION = s
+    return _FAST_TRACK_SESSION
+
+def fast_fetch_listings(list_url):
+    """用 requests 直接抓第一頁 HTML，回傳解析後的 listing list（每筆含 url/title/price）"""
+    if not HAS_BS4:
+        return []
+    import warnings; warnings.filterwarnings("ignore")
+    try:
+        sess = _get_fast_session()
+        r = sess.get(list_url, timeout=10)
+        if r.status_code != 200:
+            return []
+        soup = BeautifulSoup(r.content, "html.parser")
+        listings = []
+        # 嘗試抓商品區塊（8591 的 HTML 結構）
+        items = soup.select(".list-item-line") or soup.select("[class*='item-box']") or soup.select(".commodity-list li")
+        for it in items:
+            a = it.select_one("a.fc1, a.show-title, a[href*='/v3/mall/detail/']")
+            if not a:
+                continue
+            href = a.get("href", "")
+            if not href.startswith("http"):
+                href = "https://www.8591.com.tw" + href
+            title = a.get("title", "") or a.get_text(strip=True)
+            # 抓價格
+            price_tag = it.select_one("[class*='price'], .price, .fc-red")
+            price_str = price_tag.get_text(strip=True).replace(",", "").replace("$", "").strip() if price_tag else "0"
+            try:
+                price = int("".join(filter(str.isdigit, price_str)) or "0")
+            except:
+                price = 0
+            if href and price > 0:
+                listings.append({"url": href, "title": title, "price": price})
+        return listings
+    except Exception as e:
+        print(f"  [快速監控] 抓取失敗：{e}")
+        return []
+
+def fast_track_scan(GAMES):
+    """
+    快速首發監控：每 2 分鐘掃一次，只看第一頁新商品。
+    若發現未見過的優質商品（cpw >= cp 門檻），立刻發 Discord 警報。
+    不寫入 Google Sheets，不跑 Playwright，超輕量。
+    """
+    if not HAS_BS4:
+        return
+
+    import warnings; warnings.filterwarnings("ignore")
+    print(f"\n⚡ [快速監控] {datetime.now().strftime('%H:%M:%S')} 掃描中...")
+
+    for game_key, g in GAMES.items():
+        listing_seen_file = g["listing_seen_file"]
+        stats_file        = g["stats_file"]
+        char_weights      = g["char_weights"]
+        alias_map         = g.get("alias_map", {})
+        discord_url       = g["discord"]
+        emoji             = g["emoji"]
+        high_tier_chars   = g.get("high_tier_chars", set())
+
+        listing_seen_map = load_listing_seen(listing_seen_file)
+        stats            = load_stats(stats_file)
+        thresholds       = get_thresholds(stats)
+        if thresholds["cpw_threshold"] <= 0:
+            continue  # 還沒有足夠歷史資料，跳過
+
+        listings = fast_fetch_listings(g["list_url"])
+        if not listings:
+            continue
+
+        now_str = datetime.now().strftime("%Y-%m-%d")
+        alerts  = []
+        new_seen = {}
+
+        for item in listings:
+            url   = item["url"]
+            title = item["title"]
+            price = item["price"]
+
+            # 已見過的跳過（不重複通知）
+            if url in listing_seen_map:
+                continue
+
+            # 標記為本次第一次見到
+            listing_seen_map[url] = now_str
+            new_seen[url] = now_str
+
+            # 快速計算 CP（只用角色關鍵字解析金角數，無法去詳情頁）
+            gold_char = 0
+            m = re.search(r'(\d+)金', title)
+            if m:
+                gold_char = int(m.group(1))
+
+            # 計算加權分數（只用已知關鍵字）
+            ws = calc_weighted_score(title, char_weights, alias_map)
+            cpw = cp_weighted(price, ws) if ws > 0 else float('inf')
+
+            # 判斷是否達到警報門檻（加倍寬鬆，因為沒有完整資訊）
+            if cpw == float('inf') or price <= 0:
+                continue
+            if cpw <= thresholds["cpw_threshold"] * 1.2:  # 門檻內 120% 都警報
+                is_high = any(c in title for c in high_tier_chars)
+                star    = "⭐" if is_high else ""
+                alerts.append(
+                    f"{star}**${price:,}** | CP{cpw:.1f} | {title[:50]}\n{url}"
+                )
+
+        # 把新見到的商品記入 listing_seen（這樣下次不重複通知）
+        if new_seen:
+            save_listing_seen(listing_seen_file, listing_seen_map)
+
+        if alerts:
+            msg = (
+                f"⚡ **{emoji}{game_key} 快速首發警報** | "
+                f"{datetime.now().strftime('%H:%M')} | 門檻 CP≤{thresholds['cpw_threshold']:.1f}\n"
+                f"{'─'*38}\n"
+            )
+            for a in alerts[:10]:
+                if len(msg) + len(a) + 2 > 1900:
+                    send_discord(discord_url, msg)
+                    msg = f"⚡ **{game_key}（續）**\n"
+                msg += a + "\n\n"
+            if msg.strip():
+                send_discord(discord_url, msg)
+            print(f"  {game_key}：{len(alerts)} 筆新首發警報已發送")
+        else:
+            print(f"  {game_key}：{len(listings)} 筆已掃，無新首發")
+
+
+
 def check_price_drop(tracker, listings, discord_url, emoji, name):
     dropped = []
     for r in listings:
@@ -1201,9 +1353,12 @@ def run_scrape():
     print(f"\n✅ 全部完成！{datetime.now().strftime('%H:%M:%S')}")
 
 if __name__ == "__main__":
-    print("⏰ 排程啟動，每30分鐘執行一次（立即先跑一次）")
+    print("⏰ 排程啟動，每15分鐘執行一次（立即先跑一次）")
+    print("⚡ 快速監控：每2分鐘掃一次首頁新上架（不用 Playwright，超輕量）")
+    GAMES = build_games_config()
     run_scrape()
-    schedule.every(30).minutes.do(run_scrape)
+    schedule.every(15).minutes.do(run_scrape)
+    schedule.every(2).minutes.do(lambda: fast_track_scan(GAMES))
     while True:
         schedule.run_pending()
-        time.sleep(60)
+        time.sleep(30)  # 每 30 秒檢查一次排程（支援 2 分鐘精確度）

@@ -5,3 +5,4 @@ gspread
 google-auth
 schedule
 pymongo[srv]
+beautifulsoup4
