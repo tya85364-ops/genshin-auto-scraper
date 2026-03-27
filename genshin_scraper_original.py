@@ -843,21 +843,38 @@ def update_stats(stats, new_trades, filepath):
     return stats
 
 def get_thresholds(stats):
-    if stats["count"] == 0:
+    records = stats.get("records", [])
+    if not records:
         return {"cp1_threshold": 30, "cp2_threshold": 25, "cpw_threshold": 20,
                 "cp1_avg": 30, "cp2_avg": 25, "cpw_avg": 20,
                 "price_avg": 0, "gold_char_avg": 0}
-    n = stats["count"]
-    cp1_avg = stats["cp1_sum"] / n
-    cp2_avg = stats["cp2_sum"] / n
-    cpw_avg = stats["cpw_sum"] / n
+
+    def get_trimmed_mean(vals):
+        if not vals: return 0
+        if len(vals) < 5: return sum(vals) / len(vals)
+        vals.sort()
+        # 剔除最高與最低 15%（解決極端值/亂填資料）
+        trim_idx = max(1, int(len(vals) * 0.15))
+        trimmed = vals[trim_idx:-trim_idx]
+        return sum(trimmed) / len(trimmed) if trimmed else (sum(vals) / len(vals))
+
+    cp1_vals = [r["cp1"] for r in records if r.get("cp1")]
+    cp2_vals = [r["cp2"] for r in records if r.get("cp2")]
+    cpw_vals = [r["cpw"] for r in records if r.get("cpw")]
+    prices = [r["price"] for r in records if r.get("price")]
+    golds = [r["gold_char"] for r in records if r.get("gold_char")]
+
+    cp1_avg = get_trimmed_mean(cp1_vals) or 30
+    cp2_avg = get_trimmed_mean(cp2_vals) or 25
+    cpw_avg = get_trimmed_mean(cpw_vals) or 20
+
     return {
         "cp1_avg": cp1_avg, "cp2_avg": cp2_avg, "cpw_avg": cpw_avg,
         "cp1_threshold": cp1_avg * 0.8,
         "cp2_threshold": cp2_avg * 0.8,
         "cpw_threshold": cpw_avg * 0.8,
-        "price_avg": stats["price_sum"] / n,
-        "gold_char_avg": stats["gold_char_sum"] / n,
+        "price_avg": get_trimmed_mean(prices),
+        "gold_char_avg": get_trimmed_mean(golds),
     }
 
 def load_seen(filepath, key="urls"):
