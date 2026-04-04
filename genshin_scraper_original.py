@@ -401,7 +401,37 @@ def gsheet_update_prices(ws, updates):
         
         if batch_data:
             ws.batch_update(batch_data)
-            print(f"  Google Sheets 追蹤更新：{len(batch_data)} 筆改價紀錄")
+            
+            # 加上深綠色粗體格式，標示出曾經改過價格的紀錄
+            format_requests = []
+            for upd in updates:
+                row_idx = url_idx_map.get(upd["url"])
+                if row_idx:
+                    format_requests.append({
+                        "repeatCell": {
+                            "range": {
+                                "sheetId": ws.id,
+                                "startRowIndex": row_idx - 1,
+                                "endRowIndex": row_idx,
+                                "startColumnIndex": 14, # 第 15 欄 (O)
+                                "endColumnIndex": 16    # 第 16 欄 (P)
+                            },
+                            "cell": {
+                                "userEnteredFormat": {
+                                    "textFormat": {
+                                        # 深綠色 rgb(0, 128, 0)
+                                        "foregroundColor": {"red": 0.0, "green": 0.5, "blue": 0.0},
+                                        "bold": True
+                                    }
+                                }
+                            },
+                            "fields": "userEnteredFormat(textFormat)"
+                        }
+                    })
+            if format_requests:
+                ws.spreadsheet.batch_update({"requests": format_requests})
+                
+            print(f"  Google Sheets 追蹤更新：{len(batch_data)} 筆改價紀錄（已標示深綠色）")
     except Exception as e:
         print(f"  Google Sheets 改價更新失敗：{e}")
 
@@ -491,7 +521,6 @@ def update_gsheet_completed(ws, new_trades, sellers, seen_map, high_tier_chars):
                 r['gold_char'],
                 r['gold_weap'],
                 const_str if const_str else "-",
-                high_tier_str,
                 high_tier_str,
                 cp1_str,
                 cp2_str,
@@ -1379,6 +1408,7 @@ def run_game(main_page, detail_page, game_key, g, gc, price_tracker):
     listing_seen_set = set(listing_seen_map.keys())
     new_good = [r for r in valid if (
         r['url'] not in listing_seen_set or
+        (isinstance(listing_seen_map.get(r['url']), dict) and listing_seen_map.get(r['url']).get('date') == today_str) or
         listing_seen_map.get(r['url']) == today_str
     ) and (
         r['cp1'] <= thresholds['cp1_threshold'] or
