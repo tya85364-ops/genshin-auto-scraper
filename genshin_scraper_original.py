@@ -11,11 +11,6 @@ try:
     from generate_chart import generate_trend_chart
 except ImportError:
     generate_trend_chart = None
-
-try:
-    from update_tier_lists import run_tier_updates
-except ImportError:
-    run_tier_updates = None
 try:
     import pymongo
     HAS_PYMONGO = True
@@ -1633,10 +1628,6 @@ if __name__ == "__main__":
     schedule.every(30).minutes.do(run_scrape)
     schedule.every(2).minutes.do(lambda: fast_track_scan(GAMES))
     schedule.every().sunday.at("20:00").do(lambda: run_trend_charts(GAMES))
-    
-    if run_tier_updates:
-        # 每週三凌晨 4 點自動抓取最新的 Meta 角色梯隊 JSON
-        schedule.every().wednesday.at("04:00").do(run_tier_updates)
     
     while True:
         schedule.run_pending()
