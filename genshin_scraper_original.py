@@ -470,6 +470,33 @@ def update_gsheet(ws, new_items, thresholds, sellers):
             print("  Google Sheets：無新資料")
             return
         written = gsheet_batch_insert(ws, rows_to_add)
+        
+        # 防止 gspread.insert_row 繼承上一列被標綠色的格式，強制把新插入的 O、P 欄設回黑色正常字體
+        if written:
+            try:
+                ws.spreadsheet.batch_update({"requests": [{
+                    "repeatCell": {
+                        "range": {
+                            "sheetId": ws.id,
+                            "startRowIndex": 1, # Row 2 (0-indexed)
+                            "endRowIndex": 1 + len(rows_to_add), # 剛插入的數量範圍
+                            "startColumnIndex": 14,
+                            "endColumnIndex": 16
+                        },
+                        "cell": {
+                            "userEnteredFormat": {
+                                "textFormat": {
+                                    "foregroundColor": {"red": 0.0, "green": 0.0, "blue": 0.0}, # 黑色
+                                    "bold": False
+                                }
+                            }
+                        },
+                        "fields": "userEnteredFormat(textFormat)"
+                    }
+                }]})
+            except Exception as fe:
+                print(f"  Google Sheets 格式重置失敗：{fe}")
+                
         print(f"  Google Sheets 更新：新增 {len(written)}/{len(rows_to_add)} 筆")
     except Exception as e:
         print(f"  Google Sheets 更新失敗：{e}")
