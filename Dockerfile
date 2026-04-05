@@ -10,9 +10,15 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # 複製程式碼與 tier list JSON（靜態設定檔）
 COPY genshin_scraper_original.py .
+COPY update_tier_lists.py .
+COPY discord_bot.py .
+COPY start.sh .
 COPY genshin_tier_list.json .
 COPY wutheringwaves_tier_list.json .
 COPY hsr_tier_list.json .
+
+# 確保腳本具備執行權限
+RUN chmod +x start.sh
 
 # 確保 Python 輸出不 buffer（log 即時顯示）
 ENV PYTHONUNBUFFERED=1
@@ -20,4 +26,4 @@ ENV PYTHONUNBUFFERED=1
 # 設定伺服器時區為台灣時間 (UTC+8)
 ENV TZ="Asia/Taipei"
 
-CMD ["python", "genshin_scraper_original.py"]
+CMD ["./start.sh"]
