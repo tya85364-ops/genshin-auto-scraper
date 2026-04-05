@@ -1,187 +1,234 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-import json
-import os
 import webbrowser
+import os
+import threading
 from dotenv import load_dotenv
-
-# 嘗試載入 PyMongo
-try:
-    from pymongo import MongoClient
-    HAS_PYMONGO = True
-except ImportError:
-    HAS_PYMONGO = False
 
 load_dotenv()
 
-# 遊戲檔案名稱對應
-GAMES = {
-    "崩壞：星穹鐵道": "sr_market_stats.json",
-    "原神": "gs_market_stats.json",
-    "鳴潮": "ww_market_stats.json"
+# ---- Google Sheets 設定 ----
+SPREADSHEET_ID = "1SOt-2DwJVEcEgvuvQfAvW6ue6WcrnvywxPbKIJFEcYI"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+GCP_KEY_FILE = os.path.join(BASE_DIR, "gcp_key.json")
+
+# 工作表名稱對照 (在架 / 成交)
+GAME_SHEETS = {
+    "崩鐵 (在架)":  ("崩鐵",            "in_progress"),
+    "崩鐵 (成交)":  ("崩鐵-成交紀錄",   "completed"),
+    "原神 (在架)":  ("原神",            "in_progress"),
+    "原神 (成交)":  ("原神-成交紀錄",   "completed"),
+    "鳴潮 (在架)":  ("鳴潮",            "in_progress"),
+    "鳴潮 (成交)":  ("鳴潮-成交紀錄",   "completed"),
 }
+
+# ---- 欄位定義 (依照實際工作表 header) ----
+# 在架: 發現時間(0) 上架時間(1) 標題(2) 價格(3) 金角(4) 金武/專(5) 純角CP(6) ... 賣家ID(12) 連結(13)
+# 成交: 成交發現日(0) 上架時間(1) 售出天數(2) 標題(3) 價格(4) 金角(5) ... 純角CP(9) ... 賣家ID(12) 連結(13)
+COLS = {
+    "in_progress": {"date": 0, "title": 2, "price": 3, "gold": 4, "cp1": 6, "seller": 12, "url": 13},
+    "completed":   {"date": 0, "title": 3, "price": 4, "gold": 5, "cp1": 9, "seller": 12, "url": 13},
+}
+
+
+def get_gspread_client():
+    import gspread
+    from google.oauth2.service_account import Credentials
+    scopes = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
+    creds = Credentials.from_service_account_file(GCP_KEY_FILE, scopes=scopes)
+    return gspread.authorize(creds)
+
+def fetch_sheet_data(sheet_name, status_callback):
+    """從試算表抓取指定工作表的所有資料列 (跳過標題列)"""
+    try:
+        status_callback("連線 Google Sheets 中...")
+        gc = get_gspread_client()
+        sh = gc.open_by_key(SPREADSHEET_ID)
+
+        # 嘗試找到符合名稱的工作表
+        ws = None
+        for s in sh.worksheets():
+            if sheet_name in s.title:
+                ws = s
+                break
+
+        if ws is None:
+            # 找不到就列出所有工作表供偵錯
+            names = [s.title for s in sh.worksheets()]
+            status_callback(f"找不到工作表 '{sheet_name}'。現有: {names}")
+            return []
+
+        status_callback(f"讀取工作表「{ws.title}」中...")
+        rows = ws.get_all_values()
+        return rows[1:]  # 跳過標題列
+    except Exception as e:
+        status_callback(f"讀取失敗：{e}")
+        return []
+
 
 class RadarApp(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("🎯 8591 倒賣庫存查盤雷達 - 本機/雲端資料庫版")
-        self.geometry("1000x600")
+        self.title("🎯 8591 看盤雷達 - Google Sheets 直連版")
+        self.geometry("1150x650")
         self.configure(bg="#1E1E1E")
-        
-        # 建立 MongoDB 連線
-        self.mongo_client = None
-        self.db = None
-        uri = os.getenv("MONGODB_URI")
-        if HAS_PYMONGO and uri:
-            try:
-                self.mongo_client = MongoClient(uri, serverSelectionTimeoutMS=3000)
-                self.mongo_client.admin.command('ping')
-                self.db = self.mongo_client["genshin_scraper"]
-                print("✅ 成功連線至 MongoDB")
-            except Exception as e:
-                print(f"⚠️ MongoDB 連線失敗，將退回使用本機 JSON: {e}")
-                self.db = None
-        
+        self._raw_rows = []   # 目前拉下來的原始資料
+        self._row_urls = {}   # treeview item_id -> url
+
         style = ttk.Style(self)
         style.theme_use("clam")
-        style.configure("TLabel", background="#1E1E1E", foreground="#FFFFFF", font=("微軟正黑體", 10))
-        style.configure("TButton", font=("微軟正黑體", 10, "bold"), background="#007ACC", foreground="#FFFFFF")
-        style.configure("Treeview", background="#2D2D2D", foreground="#FFFFFF", fieldbackground="#2D2D2D", rowheight=30)
+        style.configure("TLabel",   background="#1E1E1E", foreground="#FFFFFF", font=("微軟正黑體", 10))
+        style.configure("TButton",  font=("微軟正黑體", 10, "bold"), background="#007ACC", foreground="#FFFFFF")
+        style.configure("TEntry",   fieldbackground="#2D2D2D", foreground="#FFFFFF")
+        style.configure("TCombobox",fieldbackground="#2D2D2D", foreground="#FFFFFF")
+        style.configure("Treeview", background="#2D2D2D", foreground="#FFFFFF",
+                        fieldbackground="#2D2D2D", rowheight=28)
         style.map("Treeview", background=[("selected", "#007ACC")])
-        
-        # --- 頂部控制面板 ---
-        control_frame = tk.Frame(self, bg="#1E1E1E")
-        control_frame.pack(fill=tk.X, padx=10, pady=10)
-        
-        ttk.Label(control_frame, text="遊戲:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
-        self.game_combo = ttk.Combobox(control_frame, values=list(GAMES.keys()), width=15, state="readonly")
-        self.game_combo.current(0)
-        self.game_combo.grid(row=0, column=1, padx=5, pady=5)
-        
-        ttk.Label(control_frame, text="關鍵字:").grid(row=0, column=2, padx=5, pady=5, sticky="w")
-        self.keyword_entry = ttk.Entry(control_frame, width=15)
-        self.keyword_entry.grid(row=0, column=3, padx=5, pady=5)
-        
-        ttk.Label(control_frame, text="CP最少:").grid(row=0, column=4, padx=5, pady=5, sticky="w")
-        self.min_cp = ttk.Entry(control_frame, width=8)
-        self.min_cp.insert(0, "0")
-        self.min_cp.grid(row=0, column=5, padx=5, pady=5)
-        
-        ttk.Label(control_frame, text="預算($):").grid(row=0, column=6, padx=5, pady=5, sticky="w")
-        self.min_price = ttk.Entry(control_frame, width=8)
-        self.min_price.grid(row=0, column=7, padx=5, pady=5)
-        
-        ttk.Label(control_frame, text="~").grid(row=0, column=8, padx=2, pady=5, sticky="w")
-        self.max_price = ttk.Entry(control_frame, width=8)
-        self.max_price.grid(row=0, column=9, padx=5, pady=5)
-        
-        self.search_btn = ttk.Button(control_frame, text="資料庫檢索", command=self.do_search)
-        self.search_btn.grid(row=0, column=10, padx=15, pady=5)
-        
-        # --- 表格 ---
-        cols = ("日期", "標題", "價格", "純角CP", "金卡數", "賣家")
-        self.tree = ttk.Treeview(self, columns=cols, show="headings", selectmode="browse")
-        self.tree.heading("日期", text="紀錄日期")
-        self.tree.column("日期", width=90, anchor="center")
-        self.tree.heading("標題", text="標題 (雙擊前往賣場)")
-        self.tree.column("標題", width=450, anchor="w")
-        self.tree.heading("價格", text="價格 ($)")
-        self.tree.column("價格", width=80, anchor="center")
-        self.tree.heading("純角CP", text="純角CP")
-        self.tree.column("純角CP", width=60, anchor="center")
-        self.tree.heading("金卡數", text="金數")
-        self.tree.column("金卡數", width=60, anchor="center")
-        self.tree.heading("賣家", text="賣家資訊")
-        self.tree.column("賣家", width=120, anchor="center")
-        
-        self.tree.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+
+        # ---- 控制面板 ----
+        ctrl = tk.Frame(self, bg="#1E1E1E")
+        ctrl.pack(fill=tk.X, padx=10, pady=8)
+
+        ttk.Label(ctrl, text="工作表:").grid(row=0, column=0, padx=4, sticky="w")
+        self.sheet_combo = ttk.Combobox(ctrl, values=list(GAME_SHEETS.keys()), width=16, state="readonly")
+        self.sheet_combo.current(0)
+        self.sheet_combo.grid(row=0, column=1, padx=4)
+
+        ttk.Label(ctrl, text="關鍵字:").grid(row=0, column=2, padx=4, sticky="w")
+        self.keyword_entry = ttk.Entry(ctrl, width=14)
+        self.keyword_entry.grid(row=0, column=3, padx=4)
+
+        ttk.Label(ctrl, text="預算:").grid(row=0, column=4, padx=4, sticky="w")
+        self.min_price = ttk.Entry(ctrl, width=8)
+        self.min_price.grid(row=0, column=5, padx=2)
+        ttk.Label(ctrl, text="~").grid(row=0, column=6, padx=1)
+        self.max_price = ttk.Entry(ctrl, width=8)
+        self.max_price.grid(row=0, column=7, padx=2)
+
+        ttk.Label(ctrl, text="純角CP≤:").grid(row=0, column=8, padx=4, sticky="w")
+        self.max_cp = ttk.Entry(ctrl, width=7)
+        self.max_cp.grid(row=0, column=9, padx=2)
+
+        self.fetch_btn = ttk.Button(ctrl, text="📡 拉取資料", command=self.async_fetch)
+        self.fetch_btn.grid(row=0, column=10, padx=8)
+        self.filter_btn = ttk.Button(ctrl, text="🔍 套用篩選", command=self.apply_filter)
+        self.filter_btn.grid(row=0, column=11, padx=4)
+
+        # ---- 資料表 ----
+        cols = ("日期", "標題", "價格", "金角", "純角CP", "賣家")
+        self.tree = ttk.Treeview(self, columns=cols, show="headings")
+        self.tree.heading("日期",  text="發現日期")
+        self.tree.column("日期",   width=90,  anchor="center")
+        self.tree.heading("標題",  text="標題 (雙擊前往賣場)")
+        self.tree.column("標題",   width=540, anchor="w")
+        self.tree.heading("價格",  text="價格($)")
+        self.tree.column("價格",   width=80,  anchor="center")
+        self.tree.heading("金角",  text="金角")
+        self.tree.column("金角",   width=50,  anchor="center")
+        self.tree.heading("純角CP",text="純角CP")
+        self.tree.column("純角CP", width=70,  anchor="center")
+        self.tree.heading("賣家",  text="賣家")
+        self.tree.column("賣家",   width=120, anchor="center")
+
+        sb = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=sb.set)
+        self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(10,0), pady=4)
+        sb.pack(side=tk.LEFT, fill=tk.Y, pady=4)
+
         self.tree.bind("<Double-1>", self.on_double_click)
-        
-        # 隱藏的 URL 記錄器
-        self.row_urls = {}
-        
-        self.status_var = tk.StringVar(value=f"就緒，資料來源：{'MongoDB雲端' if self.db is not None else '本機 JSON'}")
-        self.status_bar = ttk.Label(self, textvariable=self.status_var)
-        self.status_bar.pack(fill=tk.X, padx=10, pady=5)
 
-    def do_search(self):
-        game_name = self.game_combo.get()
-        filename = GAMES[game_name]
-        kw = self.keyword_entry.get().strip()
-        
-        try: p_min = float(self.min_price.get().strip() or str(0))
+        # ---- 狀態列 ----
+        self.status_var = tk.StringVar(value="就緒｜按「拉取資料」連線 Google Sheets")
+        ttk.Label(self, textvariable=self.status_var).pack(fill=tk.X, padx=10, pady=4)
+
+    # ------------------------------------------------------------------
+    def set_status(self, msg):
+        """可從執行緒安全呼叫"""
+        self.after(0, lambda: self.status_var.set(msg))
+
+    def async_fetch(self):
+        """背景執行緒拉資料，避免 UI 凍結"""
+        self.fetch_btn.config(state="disabled")
+        sheet_key = self.sheet_combo.get()
+        sheet_name, _ = GAME_SHEETS[sheet_key]
+
+        def worker():
+            rows = fetch_sheet_data(sheet_name, self.set_status)
+            self._raw_rows = rows
+            self.after(0, self.apply_filter)
+            self.after(0, lambda: self.fetch_btn.config(state="normal"))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def apply_filter(self):
+        if not self._raw_rows:
+            self.set_status("尚無資料，請先按「拉取資料」")
+            return
+
+        _, sheet_type = GAME_SHEETS[self.sheet_combo.get()]
+        c = COLS[sheet_type]   # 欄位索引 dict
+
+        kw = self.keyword_entry.get().strip().lower()
+        try: p_min = float(self.min_price.get().strip() or "0")
         except: p_min = 0
-        
-        try: p_max = float(self.max_price.get().strip() or str(999999))
+        try: p_max = float(self.max_price.get().strip() or "999999")
         except: p_max = 999999
-        
-        try: min_cp_val = float(self.min_cp.get().strip() or str(0))
-        except: min_cp_val = 0
+        try: max_cp_val = float(self.max_cp.get().strip() or "999")
+        except: max_cp_val = 999
 
-        self.status_var.set("檢索中...請稍候")
-        self.update_idletasks()
-        
-        records = []
-        if self.db is not None:
-            # 雲端模式
-            doc = self.db["market_stats"].find_one({"_id": filename.replace('.json', '')})
-            if doc and "records" in doc:
-                records = doc["records"]
-        else:
-            # 本機模式
-            if os.path.exists(filename):
-                try:
-                    with open(filename, "r", encoding="utf-8") as f:
-                        data = json.load(f)
-                        records = data.get("records", [])
-                except Exception as e:
-                    self.status_var.set(f"讀取 {filename} 失敗：{e}")
-                    return
-            else:
-                self.status_var.set(f"找不到資料庫檔案 {filename}")
-                return
-        
-        # 清除舊表格
+        # 清除
         for item in self.tree.get_children():
             self.tree.delete(item)
-        self.row_urls.clear()
-        
+        self._row_urls.clear()
+
         count = 0
-        records.reverse()  # 從最新開始顯示
-        
-        for rec in records:
-            title = rec.get("title", "")
-            price = rec.get("price", 0)
-            cp1 = rec.get("cp1", 0) or 0
-            
-            # 過濾條件
-            if not (p_min <= price <= p_max):
-                continue
-            if min_cp_val > 0 and (cp1 < min_cp_val):
-                continue
-            if kw and (kw.lower() not in title.lower()):
-                continue
-                
-            item_id = self.tree.insert("", "end", values=(
-                rec.get("date", "未知"),
-                title,
-                f"${price:,.0f}",
-                f"{cp1:.2f}",
-                f"{rec.get('gold_char', 0)} / {rec.get('gold_weap', 0)}",
-                rec.get("seller_str", "未知")
+        for row in self._raw_rows:
+            def get(idx):
+                return row[idx] if len(row) > idx else ""
+
+            title   = get(c["title"])
+            price_s = get(c["price"])
+            gold_s  = get(c["gold"])
+            cp1_s   = get(c["cp1"])
+            seller  = get(c["seller"])
+            url     = get(c["url"])
+            date_s  = get(c["date"])
+
+            try: price = float(price_s.replace(",", "").replace("$", ""))
+            except: price = 0
+            try: cp1 = float(cp1_s.replace(",", ""))
+            except: cp1 = 999
+
+            if price == 0: continue
+            if not (p_min <= price <= p_max): continue
+            if kw and kw not in title.lower(): continue
+            if max_cp_val < 999 and cp1 > max_cp_val: continue
+
+            iid = self.tree.insert("", "end", values=(
+                date_s, title, f"${price:,.0f}", gold_s, cp1_s, seller
             ))
-            self.row_urls[item_id] = rec.get("url", "")
+            self._row_urls[iid] = url
             count += 1
 
-        self.status_var.set(f"檢索完成！符合條件的獵物：{count} 筆 (來源: {'MongoDB雲端' if self.db is not None else '本機 JSON'})")
+        self.set_status(f"顯示 {count} 筆 (共拉取 {len(self._raw_rows)} 筆 | 來源: Google Sheets)")
+
 
     def on_double_click(self, event):
-        item = self.tree.selection()
-        if not item: return
-        url = self.row_urls.get(item[0])
+        sel = self.tree.selection()
+        if not sel: return
+        url = self._row_urls.get(sel[0], "")
         if url:
             webbrowser.open(url)
+        else:
+            messagebox.showinfo("提示", "此列沒有連結資訊")
+
 
 if __name__ == "__main__":
+    try:
+        import gspread
+        from google.oauth2.service_account import Credentials
+    except ImportError:
+        messagebox.showerror("缺少套件", "請先執行：pip install gspread google-auth")
+        exit()
     app = RadarApp()
     app.mainloop()
