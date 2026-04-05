@@ -30,7 +30,7 @@ class RadarBot(discord.Client):
     async def setup_hook(self):
         # 啟動時註冊 slash commands 到全域
         await self.tree.sync()
-        print(f"✅ Discord 機器人上線：{self.user}")
+        print(f"[OK] Discord Bot is online: {self.user}")
 
 bot = RadarBot()
 
@@ -106,6 +106,6 @@ async def search_8591(interaction: discord.Interaction, game: app_commands.Choic
 
 if __name__ == "__main__":
     if not TOKEN:
-        print("❌ 未設定 DISCORD_BOT_TOKEN")
+        print("[ERROR] DISCORD_BOT_TOKEN not found in .env")
     else:
         bot.run(TOKEN)
