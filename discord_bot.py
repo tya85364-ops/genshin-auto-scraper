@@ -9,12 +9,11 @@ from dotenv import load_dotenv
 load_dotenv()
 TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 
-# 遊戲清單與 8591 對應 ID
+# 遊戲清單與 8591 對應 ID (依據爬蟲設定的亞服/繁中服)
 GAMES = {
-    "崩壞：星穹鐵道 (台版)": ("30129", "23377"),
-    "崩壞：星穹鐵道 (國際版)": ("30129", "23379"),
-    "原神 (台版)": ("24734", "18260"),
-    "鳴潮 (台港澳版)": ("36830", "28859")
+    "崩壞：星穹鐵道 (亞服)": ("53396", "53397"),
+    "原神 (亞服)": ("34169", "34170"),
+    "鳴潮 (繁中服)": ("44693", "53160")
 }
 
 API_URL = "https://www.8591.com.tw/v3/mall/search"
@@ -60,7 +59,9 @@ async def search_8591(interaction: discord.Interaction, game: app_commands.Choic
     }
     
     try:
-        r = requests.get(API_URL, params=params, headers=HEADERS, timeout=10)
+        import urllib3
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        r = requests.get(API_URL, params=params, headers=HEADERS, timeout=10, verify=False)
         data = r.json()
         
         if data["msg"] != "success":

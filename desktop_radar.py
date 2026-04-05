@@ -9,12 +9,11 @@ HEADERS = {
     'Accept': 'application/json, text/plain, */*'
 }
 
-# 遊戲分類 ID 對照表
+# 遊戲分類 ID 對照表 (依據爬蟲設定的亞服/繁中服)
 GAMES = {
-    "崩壞：星穹鐵道 (台版)": ("30129", "23377"),
-    "崩壞：星穹鐵道 (國際版)": ("30129", "23379"),
-    "原神 (台版)": ("24734", "18260"),
-    "鳴潮 (台港澳版)": ("36830", "28859")
+    "崩壞：星穹鐵道 (亞服)": ("53396", "53397"),
+    "原神 (亞服)": ("34169", "34170"),
+    "鳴潮 (繁中服)": ("44693", "53160")
 }
 
 class RadarApp(tk.Tk):
@@ -95,7 +94,9 @@ class RadarApp(tk.Tk):
         self.update_idletasks()
         
         try:
-            r = requests.get(API_URL, params=params, headers=HEADERS, timeout=10)
+            import urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            r = requests.get(API_URL, params=params, headers=HEADERS, timeout=10, verify=False)
             data = r.json()
             if data["msg"] == "success":
                 records = data["data"]["list"]
