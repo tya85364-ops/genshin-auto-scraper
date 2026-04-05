@@ -1,27 +1,46 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-import requests
+import json
+import os
 import webbrowser
+from dotenv import load_dotenv
 
-API_URL = "https://www.8591.com.tw/v3/mall/search"
-HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-    'Accept': 'application/json, text/plain, */*'
-}
+# 嘗試載入 PyMongo
+try:
+    from pymongo import MongoClient
+    HAS_PYMONGO = True
+except ImportError:
+    HAS_PYMONGO = False
 
-# 遊戲分類 ID 對照表 (依據爬蟲設定的亞服/繁中服)
+load_dotenv()
+
+# 遊戲檔案名稱對應
 GAMES = {
-    "崩壞：星穹鐵道 (亞服)": ("53396", "53397"),
-    "原神 (亞服)": ("34169", "34170"),
-    "鳴潮 (繁中服)": ("44693", "53160")
+    "崩壞：星穹鐵道": "sr_market_stats.json",
+    "原神": "gs_market_stats.json",
+    "鳴潮": "ww_market_stats.json"
 }
 
 class RadarApp(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("🎯 8591 倒賣操盤雷達 - 本機直連工具")
+        self.title("🎯 8591 倒賣庫存查盤雷達 - 本機/雲端資料庫版")
         self.geometry("1000x600")
         self.configure(bg="#1E1E1E")
+        
+        # 建立 MongoDB 連線
+        self.mongo_client = None
+        self.db = None
+        uri = os.getenv("MONGODB_URI")
+        if HAS_PYMONGO and uri:
+            try:
+                self.mongo_client = MongoClient(uri, serverSelectionTimeoutMS=3000)
+                self.mongo_client.admin.command('ping')
+                self.db = self.mongo_client["genshin_scraper"]
+                print("✅ 成功連線至 MongoDB")
+            except Exception as e:
+                print(f"⚠️ MongoDB 連線失敗，將退回使用本機 JSON: {e}")
+                self.db = None
         
         style = ttk.Style(self)
         style.theme_use("clam")
@@ -34,106 +53,134 @@ class RadarApp(tk.Tk):
         control_frame = tk.Frame(self, bg="#1E1E1E")
         control_frame.pack(fill=tk.X, padx=10, pady=10)
         
-        ttk.Label(control_frame, text="遊戲/伺服器:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
-        self.game_combo = ttk.Combobox(control_frame, values=list(GAMES.keys()), width=25, state="readonly")
+        ttk.Label(control_frame, text="遊戲:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        self.game_combo = ttk.Combobox(control_frame, values=list(GAMES.keys()), width=15, state="readonly")
         self.game_combo.current(0)
         self.game_combo.grid(row=0, column=1, padx=5, pady=5)
         
         ttk.Label(control_frame, text="關鍵字:").grid(row=0, column=2, padx=5, pady=5, sticky="w")
-        self.keyword_entry = ttk.Entry(control_frame, width=20)
+        self.keyword_entry = ttk.Entry(control_frame, width=15)
         self.keyword_entry.grid(row=0, column=3, padx=5, pady=5)
         
-        ttk.Label(control_frame, text="最低價:").grid(row=0, column=4, padx=5, pady=5, sticky="w")
-        self.min_price = ttk.Entry(control_frame, width=10)
-        self.min_price.grid(row=0, column=5, padx=5, pady=5)
+        ttk.Label(control_frame, text="CP最少:").grid(row=0, column=4, padx=5, pady=5, sticky="w")
+        self.min_cp = ttk.Entry(control_frame, width=8)
+        self.min_cp.insert(0, "0")
+        self.min_cp.grid(row=0, column=5, padx=5, pady=5)
         
-        ttk.Label(control_frame, text="最高價:").grid(row=0, column=6, padx=5, pady=5, sticky="w")
-        self.max_price = ttk.Entry(control_frame, width=10)
-        self.max_price.grid(row=0, column=7, padx=5, pady=5)
+        ttk.Label(control_frame, text="預算($):").grid(row=0, column=6, padx=5, pady=5, sticky="w")
+        self.min_price = ttk.Entry(control_frame, width=8)
+        self.min_price.grid(row=0, column=7, padx=5, pady=5)
         
-        self.search_btn = ttk.Button(control_frame, text="開始掃描", command=self.do_search)
-        self.search_btn.grid(row=0, column=8, padx=15, pady=5)
+        ttk.Label(control_frame, text="~").grid(row=0, column=8, padx=2, pady=5, sticky="w")
+        self.max_price = ttk.Entry(control_frame, width=8)
+        self.max_price.grid(row=0, column=9, padx=5, pady=5)
+        
+        self.search_btn = ttk.Button(control_frame, text="資料庫檢索", command=self.do_search)
+        self.search_btn.grid(row=0, column=10, padx=15, pady=5)
         
         # --- 表格 ---
-        cols = ("ID", "標題", "價格", "賣家分數")
+        cols = ("日期", "標題", "價格", "純角CP", "金卡數", "賣家")
         self.tree = ttk.Treeview(self, columns=cols, show="headings", selectmode="browse")
-        self.tree.heading("ID", text="商品編號")
-        self.tree.column("ID", width=80, anchor="center")
-        self.tree.heading("標題", text="標題 (雙擊可開啟賣場)")
-        self.tree.column("標題", width=600, anchor="w")
+        self.tree.heading("日期", text="紀錄日期")
+        self.tree.column("日期", width=90, anchor="center")
+        self.tree.heading("標題", text="標題 (雙擊前往賣場)")
+        self.tree.column("標題", width=450, anchor="w")
         self.tree.heading("價格", text="價格 ($)")
-        self.tree.column("價格", width=100, anchor="center")
-        self.tree.heading("賣家分數", text="賣家評價")
-        self.tree.column("賣家分數", width=100, anchor="center")
+        self.tree.column("價格", width=80, anchor="center")
+        self.tree.heading("純角CP", text="純角CP")
+        self.tree.column("純角CP", width=60, anchor="center")
+        self.tree.heading("金卡數", text="金數")
+        self.tree.column("金卡數", width=60, anchor="center")
+        self.tree.heading("賣家", text="賣家資訊")
+        self.tree.column("賣家", width=120, anchor="center")
         
         self.tree.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
         self.tree.bind("<Double-1>", self.on_double_click)
         
-        # --- 狀態列 ---
-        self.status_var = tk.StringVar(value="就緒")
+        # 隱藏的 URL 記錄器
+        self.row_urls = {}
+        
+        self.status_var = tk.StringVar(value=f"就緒，資料來源：{'MongoDB雲端' if self.db is not None else '本機 JSON'}")
         self.status_bar = ttk.Label(self, textvariable=self.status_var)
         self.status_bar.pack(fill=tk.X, padx=10, pady=5)
 
     def do_search(self):
         game_name = self.game_combo.get()
-        game_id, server_id = GAMES[game_name]
+        filename = GAMES[game_name]
         kw = self.keyword_entry.get().strip()
-        p_min = self.min_price.get().strip() or "0"
-        p_max = self.min_price.get().strip() or "99999"
         
-        params = {
-            "game_id": game_id,
-            "server_id": server_id,
-            "type": "1", # 帳號
-            "firstRow": 0,
-            "isLimitExt": 0,
-            "keyword": kw
-        }
+        try: p_min = float(self.min_price.get().strip() or str(0))
+        except: p_min = 0
         
-        self.status_var.set("掃描中...請稍候")
+        try: p_max = float(self.max_price.get().strip() or str(999999))
+        except: p_max = 999999
+        
+        try: min_cp_val = float(self.min_cp.get().strip() or str(0))
+        except: min_cp_val = 0
+
+        self.status_var.set("檢索中...請稍候")
         self.update_idletasks()
         
-        try:
-            import urllib3
-            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-            r = requests.get(API_URL, params=params, headers=HEADERS, timeout=10, verify=False)
-            data = r.json()
-            if data["msg"] == "success":
-                records = data["data"]["list"]
-                
-                # 價格過濾
-                try: p_min_f, p_max_f = float(p_min), float(p_max or 999999)
-                except: p_min_f, p_max_f = 0, 999999
-                
-                # 清除舊表格
-                for item in self.tree.get_children():
-                    self.tree.delete(item)
-                    
-                count = 0
-                for rec in records:
-                    price = float(rec.get("price", 0))
-                    if p_min_f <= price <= p_max_f:
-                        self.tree.insert("", "end", values=(
-                            rec.get("goods_sn"),
-                            rec.get("title", ""),
-                            f"${price:,.0f}",
-                            f"⭐ {rec.get('credit', '無')}"
-                        ))
-                        count += 1
-                self.status_var.set(f"掃描完成！符合條件的獵物：{count} 筆")
+        records = []
+        if self.db is not None:
+            # 雲端模式
+            doc = self.db["market_stats"].find_one({"_id": filename.replace('.json', '')})
+            if doc and "records" in doc:
+                records = doc["records"]
+        else:
+            # 本機模式
+            if os.path.exists(filename):
+                try:
+                    with open(filename, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                        records = data.get("records", [])
+                except Exception as e:
+                    self.status_var.set(f"讀取 {filename} 失敗：{e}")
+                    return
             else:
-                self.status_var.set(f"API 回應錯誤：{data.get('msg')}")
-        except Exception as e:
-            messagebox.showerror("錯誤", f"無法連接至 8591:\n{e}")
-            self.status_var.set("就緒")
+                self.status_var.set(f"找不到資料庫檔案 {filename}")
+                return
+        
+        # 清除舊表格
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        self.row_urls.clear()
+        
+        count = 0
+        records.reverse()  # 從最新開始顯示
+        
+        for rec in records:
+            title = rec.get("title", "")
+            price = rec.get("price", 0)
+            cp1 = rec.get("cp1", 0) or 0
+            
+            # 過濾條件
+            if not (p_min <= price <= p_max):
+                continue
+            if min_cp_val > 0 and (cp1 < min_cp_val):
+                continue
+            if kw and (kw.lower() not in title.lower()):
+                continue
+                
+            item_id = self.tree.insert("", "end", values=(
+                rec.get("date", "未知"),
+                title,
+                f"${price:,.0f}",
+                f"{cp1:.2f}",
+                f"{rec.get('gold_char', 0)} / {rec.get('gold_weap', 0)}",
+                rec.get("seller_str", "未知")
+            ))
+            self.row_urls[item_id] = rec.get("url", "")
+            count += 1
+
+        self.status_var.set(f"檢索完成！符合條件的獵物：{count} 筆 (來源: {'MongoDB雲端' if self.db is not None else '本機 JSON'})")
 
     def on_double_click(self, event):
         item = self.tree.selection()
         if not item: return
-        item_values = self.tree.item(item[0], "values")
-        goods_sn = item_values[0]
-        url = f"https://www.8591.com.tw/v3/mall/detail/{goods_sn}"
-        webbrowser.open(url)
+        url = self.row_urls.get(item[0])
+        if url:
+            webbrowser.open(url)
 
 if __name__ == "__main__":
     app = RadarApp()
