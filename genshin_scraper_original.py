@@ -159,7 +159,13 @@ def build_games_config():
 def __migrate_seen_map(seen_map):
     for k, v in list(seen_map.items()):
         if isinstance(v, str):
-            seen_map[k] = {"date": v}
+            seen_map[k] = {"date": v, "min_price": 0, "max_price": 0}
+        elif isinstance(v, dict):
+            # 補上缺失的 min_price / max_price（舊版 migration 只補了 date）
+            if "min_price" not in v:
+                v["min_price"] = 0
+            if "max_price" not in v:
+                v["max_price"] = 0
     return seen_map
 
 def load_listing_seen(filepath):
@@ -1312,12 +1318,14 @@ def scrape_pages(main_page, base_url, max_pages, label="",
                         if isinstance(stop_at_seen, dict):
                             val = stop_at_seen[detail_url]
                             if isinstance(val, dict):
-                                old_min = val.get("min_price", price)
-                                old_max = val.get("max_price", price)
-                                if price < old_min:
+                                old_min = val.get("min_price", 0) or 0
+                                old_max = val.get("max_price", 0) or 0
+                                # old_min==0 代表尚未記錄過，直接設定
+                                if old_min == 0 or price < old_min:
                                     val["min_price"] = price
-                                    price_updates.append({"url": detail_url, "min_price": price, "max_price": old_max})
-                                elif price > old_max:
+                                    effective_max = old_max if old_max > 0 else price
+                                    price_updates.append({"url": detail_url, "min_price": price, "max_price": effective_max})
+                                elif old_max == 0 or price > old_max:
                                     val["max_price"] = price
                                     price_updates.append({"url": detail_url, "min_price": old_min, "max_price": price})
                         continue
