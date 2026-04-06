@@ -4,6 +4,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from dotenv import load_dotenv
+from typing import Optional
 
 # 載入環境變數
 load_dotenv()
@@ -30,7 +31,7 @@ class RadarBot(discord.Client):
     async def setup_hook(self):
         # 啟動時註冊 slash commands 到全域
         await self.tree.sync()
-        print(f"[OK] Discord Bot is online: {self.user}")
+        print(f"✅ Discord 機器人上線：{self.user}")
 
 bot = RadarBot()
 
@@ -44,18 +45,27 @@ bot = RadarBot()
 @app_commands.choices(game=[
     app_commands.Choice(name=k, value=k) for k in GAMES.keys()
 ])
-async def search_8591(interaction: discord.Interaction, game: app_commands.Choice[str], min_price: int, max_price: int, keyword: str):
+async def search_8591(
+    interaction: discord.Interaction,
+    game: app_commands.Choice[str],
+    min_price: Optional[int] = None,
+    max_price: Optional[int] = None,
+    keyword: Optional[str] = None
+):
     # 立即回應，避免超時 (8591 API 有時較慢)
     await interaction.response.defer(thinking=True)
     
     game_id, server_id = GAMES[game.value]
+    p_min = min_price if min_price is not None else 0
+    p_max = max_price if max_price is not None else 999999
+    kw    = keyword.strip() if keyword else ""
     params = {
         "game_id": game_id,
         "server_id": server_id,
         "type": "1",
         "firstRow": 0,
         "isLimitExt": 0,
-        "keyword": keyword
+        "keyword": kw
     }
     
     try:
@@ -72,17 +82,20 @@ async def search_8591(interaction: discord.Interaction, game: app_commands.Choic
         matched = []
         for rec in records:
             price = float(rec.get("price", 0))
-            if min_price <= price <= max_price:
-                matched.append(rec)
+            title_txt = rec.get("title", "")
+            if p_min <= price <= p_max:
+                if not kw or kw in title_txt:
+                    matched.append(rec)
                 
         if not matched:
-            await interaction.followup.send(f"🔍 找不到符合價格 `${min_price}` ~ `${max_price}` 且包含 `{keyword}` 的【{game.name}】帳號哦。")
+            cond = f"${p_min}~${p_max}" + (f" 關鍵字:{kw}" if kw else "")
+            await interaction.followup.send(f"🔍 找不到符合條件（{cond}）的【{game.name}】帳號哦。")
             return
             
-        # 發送整理好的資訊卡 (Discord Embed)，最多只顯示前 5 筆以免洗版
+        cond_str = f"${p_min}~${p_max}" + (f" | 關鍵字：`{kw}`" if kw else "")
         embed = discord.Embed(
             title=f"🎯 8591 雷達偵測結果 ({len(matched)} 筆)",
-            description=f"**條件**：{game.name} | `${min_price}`~`${max_price}` | 關鍵字：`{keyword}`\n（僅顯示前 5 筆高關聯結果）",
+            description=f"**條件**：{game.name} | {cond_str}\n（僅顯示前 5 筆）",
             color=0x00FF00
         )
         
@@ -106,6 +119,6 @@ async def search_8591(interaction: discord.Interaction, game: app_commands.Choic
 
 if __name__ == "__main__":
     if not TOKEN:
-        print("[ERROR] DISCORD_BOT_TOKEN not found in .env")
+        print("❌ 未設定 DISCORD_BOT_TOKEN")
     else:
         bot.run(TOKEN)
