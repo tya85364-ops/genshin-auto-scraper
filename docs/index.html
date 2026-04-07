@@ -182,6 +182,16 @@
   .badge-gold { background: rgba(255,215,0,0.12); color: var(--gold); border: 1px solid rgba(255,215,0,0.3); }
   .badge-date { background: rgba(0,212,255,0.08); color: var(--accent2); border: 1px solid rgba(0,212,255,0.2); }
   .badge-seller { background: rgba(136,136,170,0.12); color: var(--muted); border: 1px solid var(--border); }
+  .badge-seller.clickable { cursor: pointer; color: var(--accent2); background: rgba(0,212,255,0.08); border-color: rgba(0,212,255,0.2); }
+
+  /* Fav toggle */
+  .fav-btn {
+    position: absolute; right: 12px; bottom: 12px;
+    font-size: 20px; color: var(--border); cursor: pointer;
+    background: none; border: none; padding: 4px;
+    transition: transform 0.2s; z-index: 2;
+  }
+  .fav-btn.active { color: var(--gold); text-shadow: 0 0 10px rgba(255,215,0,0.5); transform: scale(1.1); }
 
   /* Empty state */
   .empty {
@@ -224,6 +234,7 @@
     <div class="tab" data-sheet="原神-成交紀錄" data-type="completed">原神成交</div>
     <div class="tab" data-sheet="鳴潮" data-type="in_progress">鳴潮在架</div>
     <div class="tab" data-sheet="鳴潮-成交紀錄" data-type="completed">鳴潮成交</div>
+    <div class="tab" data-sheet="favorites" data-type="favorites" style="border-color: var(--gold); color: var(--gold);">⭐️ 追蹤清單</div>
   </div>
 </header>
 
@@ -291,6 +302,41 @@ let currentType  = 'in_progress';
 let rawRows = [];
 let sortBy = 'cp';  // 'cp' or 'price'
 
+// Favorites storage
+function getFavorites() {
+  try { return JSON.parse(localStorage.getItem('eight591_favs') || '{}'); }
+  catch(e) { return {}; }
+}
+function saveFavorites(favs) {
+  localStorage.setItem('eight591_favs', JSON.stringify(favs));
+}
+function toggleFav(e, url, cardDataStr) {
+  e.preventDefault();
+  e.stopPropagation();
+  let favs = getFavorites();
+  if (favs[url]) {
+    delete favs[url];
+    e.currentTarget.classList.remove('active');
+  } else {
+    try {
+      const data = JSON.parse(decodeURIComponent(cardDataStr));
+      favs[url] = data;
+      e.currentTarget.classList.add('active');
+    } catch(err) {}
+  }
+  saveFavorites(favs);
+  
+  if (currentSheet === 'favorites') {
+    doSearch(); // Refresh list if removing from favorites tab
+  }
+}
+
+function openSeller(e, sellerId) {
+  e.preventDefault();
+  e.stopPropagation();
+  window.open(`https://www.8591.com.tw/user-userAppraise.html?userId=${sellerId}&role=B`, '_blank');
+}
+
 // Tab switching
 document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => {
@@ -300,7 +346,14 @@ document.querySelectorAll('.tab').forEach(tab => {
     currentType  = tab.dataset.type;
     rawRows = [];
     renderResults([]);
-    setStatus('選好工作表了，點「拉取 & 搜尋」開始查詢');
+    
+    if (currentSheet === 'favorites') {
+      document.querySelector('.filters').style.display = 'none';
+      doSearch();
+    } else {
+      document.querySelector('.filters').style.display = 'flex';
+      setStatus('選好工作表了，點「拉取 & 搜尋」開始查詢');
+    }
   });
 });
 
@@ -310,7 +363,6 @@ function csvUrl(sheetName) {
 
 function parseCSV(text) {
   const rows = [];
-  // simple CSV with possible quoted fields
   const lines = text.split(/\r?\n/);
   for (const line of lines) {
     if (!line.trim()) continue;
@@ -325,17 +377,29 @@ function parseCSV(text) {
     cells.push(cur);
     rows.push(cells.map(c => c.trim()));
   }
-  return rows.slice(1); // skip header
+  return rows.slice(1);
 }
 
 function setStatus(msg, loading=false) {
-  document.getElementById('statusText').textContent = msg;
-  document.getElementById('spinner').classList.toggle('show', loading);
+  const st = document.getElementById('statusText');
+  if (st) st.textContent = msg;
+  const sp = document.getElementById('spinner');
+  if (sp) sp.classList.toggle('show', loading);
 }
 
 async function doSearch() {
+  if (currentSheet === 'favorites') {
+    const favs = getFavorites();
+    const items = Object.values(favs);
+    rawRows = []; // Not used for filtering in favorites view
+    items.sort((a,b) => sortBy === 'cp' ? a.cp1 - b.cp1 : a.price - b.price);
+    setStatus(`追蹤清單：共 ${items.length} 筆`);
+    renderResults(items, true);
+    return;
+  }
+
   const btn = document.getElementById('searchBtn');
-  btn.disabled = true;
+  if (btn) btn.disabled = true;
   setStatus('連線 Google Sheets 中…', true);
 
   try {
@@ -347,18 +411,21 @@ async function doSearch() {
   } catch(e) {
     setStatus('❌ 讀取失敗：' + e.message);
   } finally {
-    btn.disabled = false;
-    document.getElementById('spinner').classList.remove('show');
+    if (btn) btn.disabled = false;
+    const sp = document.getElementById('spinner');
+    if (sp) sp.classList.remove('show');
   }
 }
 
 function toggleCustomDate() {
   const v = document.getElementById('dateFilter').value;
-  document.getElementById('customDateRow').style.display = v === 'custom' ? 'flex' : 'none';
+  const row = document.getElementById('customDateRow');
+  if (row) row.style.display = v === 'custom' ? 'flex' : 'none';
   if (v !== 'custom') applyFilter();
 }
 
 function applyFilter() {
+  if (currentSheet === 'favorites') return;
   const kw      = document.getElementById('keyword').value.trim().toLowerCase();
   const pMin    = parseFloat(document.getElementById('minPrice').value) || 0;
   const pMax    = parseFloat(document.getElementById('maxPrice').value) || 999999;
@@ -383,11 +450,7 @@ function applyFilter() {
     if (kw && !title.toLowerCase().includes(kw)) continue;
     if (cpMax < 999 && cp1 > cpMax) continue;
 
-    // Date Filter Logic
-    let dateStr = g(c.date).slice(0,10);
-    // Remove >= or * from history pseudo-dates
-    dateStr = dateStr.replace(/[^\d-]/g, '');
-    
+    let dateStr = g(c.date).slice(0,10).replace(/[^\d-]/g, '');
     if (df !== 'all' && dateStr) {
       const rowDate = new Date(dateStr);
       if (!isNaN(rowDate)) {
@@ -410,20 +473,20 @@ function applyFilter() {
     });
   }
 
-  // sort
   matched.sort((a,b) => sortBy === 'cp' ? a.cp1 - b.cp1 : a.price - b.price);
-
   setStatus(`共 ${rawRows.length} 筆，符合條件 ${matched.length} 筆（依 ${sortBy==='cp'?'CP':'價格'} 由低到高）`);
   renderResults(matched);
 }
 
-function renderResults(items) {
+function renderResults(items, isFavoritesMode = false) {
   const el = document.getElementById('resultsInner');
   if (!items.length) {
+    const msg = isFavoritesMode ? '目前沒有收藏的商品' : (rawRows.length ? '無符合結果' : '尚未拉取資料');
+    const sub = isFavoritesMode ? '點擊卡片右上角星號可加入追蹤' : (rawRows.length ? '放寬條件試試看' : '按下搜尋按鈕開始');
     el.innerHTML = `<div class="empty">
-      <div class="empty-icon">${rawRows.length ? '🔍' : '📊'}</div>
-      <div class="empty-text">${rawRows.length ? '無符合結果' : '尚未拉取資料'}</div>
-      <div class="empty-sub">${rawRows.length ? '放寬條件試試看' : '按下搜尋按鈕開始'}</div>
+      <div class="empty-icon">${rawRows.length || isFavoritesMode ? '🔍' : '📊'}</div>
+      <div class="empty-text">${msg}</div>
+      <div class="empty-sub">${sub}</div>
     </div>`;
     return;
   }
@@ -435,10 +498,27 @@ function renderResults(items) {
     <span style="margin-left:auto;color:var(--muted)">${items.length} 筆</span>
   </div>`;
 
+  const favs = getFavorites();
+
   const cards = items.map(r => {
     const href = r.url || '#';
     const cpDisplay = r.cp1 < 900 ? `CP ${r.cp1.toFixed(2)}` : '—';
+    const isFav = !!favs[r.url];
+    const dataStr = encodeURIComponent(JSON.stringify(r));
+    
+    let sellerHtml = '';
+    if (r.seller) {
+      // If seller ID is purely numeric, make it a clickable badge to userAppraise
+      let sRaw = r.seller.replace(/[^a-zA-Z0-9]/g, ''); // strip emojis
+      if (/^\d+$/.test(sRaw)) {
+        sellerHtml = `<span class="badge badge-seller clickable" onclick="openSeller(event, '${sRaw}')">👤 賣家:${sRaw}</span>`;
+      } else {
+        sellerHtml = `<span class="badge badge-seller">👤 ${escHtml(r.seller)}</span>`;
+      }
+    }
+
     return `<a class="card" href="${href}" target="_blank" rel="noopener">
+      <button class="fav-btn ${isFav ? 'active' : ''}" onclick="toggleFav(event, '${r.url}', '${dataStr}')">★</button>
       <div class="card-top">
         <div class="card-price">$${r.price.toLocaleString()}</div>
         <div class="card-cp">${cpDisplay}</div>
@@ -447,7 +527,7 @@ function renderResults(items) {
       <div class="card-meta">
         ${r.gold ? `<span class="badge badge-gold">⭐ ${r.gold} 金角</span>` : ''}
         ${r.date ? `<span class="badge badge-date">📅 ${r.date}</span>` : ''}
-        ${r.seller ? `<span class="badge badge-seller">👤 ${escHtml(r.seller)}</span>` : ''}
+        ${sellerHtml}
       </div>
     </a>`;
   }).join('');
@@ -457,7 +537,11 @@ function renderResults(items) {
 
 function setSort(s) {
   sortBy = s;
-  applyFilter();
+  if (currentSheet === 'favorites') {
+    doSearch();
+  } else {
+    applyFilter();
+  }
 }
 
 function escHtml(s) {
