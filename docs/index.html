@@ -187,21 +187,22 @@
 
   /* Fav toggle */
   .fav-btn {
-    position: absolute; right: 10px; bottom: 10px;
-    font-size: 22px; color: rgba(255, 255, 255, 0.3);
+    position: absolute; right: 8px; bottom: 8px;
+    font-size: 28px; color: rgba(255, 255, 255, 0.6);
     cursor: pointer;
-    background: rgba(0, 0, 0, 0.3); 
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 50%; width: 42px; height: 42px;
+    background: #1A1A2E; 
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%; width: 52px; height: 52px;
     display: flex; align-items: center; justify-content: center;
     transition: all 0.2s; z-index: 5;
     -webkit-tap-highlight-color: transparent;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
   }
   .fav-btn.active { 
     color: var(--gold); 
-    background: rgba(255,215,0,0.15);
-    border-color: rgba(255,215,0,0.4);
-    text-shadow: 0 0 10px rgba(255,215,0,0.5); 
+    background: rgba(255,215,0,0.2);
+    border-color: var(--gold);
+    text-shadow: 0 0 15px rgba(255,215,0,0.8); 
     transform: scale(1.1); 
   }
 
@@ -329,11 +330,13 @@ function toggleFav(e, url, cardDataStr) {
   if (favs[url]) {
     delete favs[url];
     e.currentTarget.classList.remove('active');
+    e.currentTarget.textContent = '☆';
   } else {
     try {
       const data = JSON.parse(decodeURIComponent(cardDataStr));
       favs[url] = data;
       e.currentTarget.classList.add('active');
+      e.currentTarget.textContent = '★';
     } catch(err) {}
   }
   saveFavorites(favs);
@@ -530,7 +533,7 @@ function renderResults(items, isFavoritesMode = false) {
     }
 
     return `<a class="card" href="${href}" target="_blank" rel="noopener">
-      <button class="fav-btn ${isFav ? 'active' : ''}" onclick="toggleFav(event, '${r.url}', '${dataStr}')">★</button>
+      <button class="fav-btn ${isFav ? 'active' : ''}" onclick="toggleFav(event, '${r.url}', '${dataStr}')">${isFav ? '★' : '☆'}</button>
       <div class="card-top">
         <div class="card-price">$${r.price.toLocaleString()}</div>
         <div class="card-cp">${cpDisplay}</div>
