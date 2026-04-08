@@ -52,26 +52,52 @@ def main():
             updates = []
             for i, row in enumerate(data[1:], start=2):
                 if len(row) <= price_idx: continue
-                price = row[price_idx]
-                if not price.strip(): continue
+                price_raw = row[price_idx]
+                if not price_raw.strip(): continue
                 # 拿掉可能存在的逗號與 $
-                price = price.replace(',', '').replace('$', '').strip()
-                
+                price_clean = price_raw.replace(',', '').replace('$', '').strip()
+
+                try:
+                    cur_price = float(price_clean)
+                except ValueError:
+                    continue
+
                 col_o = row[14] if len(row) > 14 else ""
                 col_p = row[15] if len(row) > 15 else ""
-                
-                update_needed = False
+
                 new_o = col_o.strip()
                 new_p = col_p.strip()
-                
-                # 如果沒有高低價資料，使用現在目前的標價來當作初始歷史高低價
+                update_needed = False
+
+                # 初始化：空值直接填當前價格
                 if not new_o or new_o == "-":
-                    new_o = price
+                    new_o = price_clean
                     update_needed = True
+                else:
+                    try:
+                        recorded_min = float(new_o.replace(',', ''))
+                        # 當前價格比記錄最低值還低 → 更新最低價
+                        if cur_price < recorded_min:
+                            new_o = price_clean
+                            update_needed = True
+                    except ValueError:
+                        new_o = price_clean
+                        update_needed = True
+
                 if not new_p or new_p == "-":
-                    new_p = price
+                    new_p = price_clean
                     update_needed = True
-                    
+                else:
+                    try:
+                        recorded_max = float(new_p.replace(',', ''))
+                        # 當前價格比記錄最高值還高 → 更新最高價
+                        if cur_price > recorded_max:
+                            new_p = price_clean
+                            update_needed = True
+                    except ValueError:
+                        new_p = price_clean
+                        update_needed = True
+
                 if update_needed:
                     updates.append({'range': f'O{i}:P{i}', 'values': [[new_o, new_p]]})
             

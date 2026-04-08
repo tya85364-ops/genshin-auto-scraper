@@ -288,43 +288,100 @@ def gsheet_batch_insert(ws, rows_to_add):
  time.sleep(10)
 
 def update_gsheet(ws, new_items, thresholds, sellers):
- if not ws:
- return
- try:
- existing = ws.col_values(14)
- existing_urls = set(existing[1:])
- now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
- rows_to_add = []
- for r in new_items:
- if r['url'] in existing_urls:
- continue
- cp1, cp2, cpw = r['cp1'], r['cp2'], r['cpw']
- is_good = (cp1 <= thresholds['cp1_threshold'] or
- cp2 <= thresholds['cp2_threshold'] or
- cpw <= thresholds['cpw_threshold'])
- good_str = "✅ 優於均值" if is_good else ""
- const_str = ", ".join(r.get('max_const', []))
- cp1_str = f"{cp1:.2f}" if cp1 != float('inf') else "-"
- cp2_str = f"{cp2:.2f}" if cp2 != float('inf') else "-"
- cpw_str = f"{cpw:.2f}" if cpw != float('inf') else "-"
- profit = r.get('estimated_profit')
- profit_str = f"+${profit:,.0f}" if profit and profit > 0 else (f"-${abs(profit):,.0f}" if profit else "-")
- sid = r.get('seller_id', '')
- is_big = sellers.get(sid, {}).get("count", 0) >= BIG_SELLER_THRESHOLD
- seller_str = f"🍽️{sid}" if is_big else sid
- rows_to_add.append([
- now_str, r.get('post_time', ''), r['title'], r['price'],
- r['gold_char'], r['gold_weap'], cp1_str, cp2_str, cpw_str,
- profit_str, const_str, good_str, seller_str, r['url']
- ])
- existing_urls.add(r['url'])
- if not rows_to_add:
- print(" Google Sheets：無新資料")
- return
- gsheet_batch_insert(ws, rows_to_add)
- print(f" Google Sheets 更新：新增 {len(rows_to_add)} 筆")
- except Exception as e:
- print(f" Google Sheets 更新失敗：{e}")
+    if not ws:
+        return
+    try:
+        # 讀取所有列：url -> (row_idx_1based, min_str, max_str)
+        all_values = ws.get_all_values()
+        url_row_map = {}
+        for row_idx, row in enumerate(all_values[1:], start=2):
+            url = row[13] if len(row) > 13 else ""
+            if url:
+                col_o = row[14].strip() if len(row) > 14 else ""
+                col_p = row[15].strip() if len(row) > 15 else ""
+                url_row_map[url] = (row_idx, col_o, col_p)
+
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+        rows_to_add = []
+        min_max_updates = []  # (row_idx, new_o, new_p)
+
+        for r in new_items:
+            url = r['url']
+            price = r['price']
+
+            if url in url_row_map:
+                # 已存在 -> 只比對更新 O/P 欄（歷史低/高價）
+                row_idx, col_o, col_p = url_row_map[url]
+                new_o, new_p = col_o, col_p
+                changed = False
+
+                if not new_o or new_o == "-":
+                    new_o = str(price)
+                    changed = True
+                else:
+                    try:
+                        if price < float(new_o.replace(',', '')):
+                            new_o = str(price)
+                            changed = True
+                    except ValueError:
+                        new_o = str(price)
+                        changed = True
+
+                if not new_p or new_p == "-":
+                    new_p = str(price)
+                    changed = True
+                else:
+                    try:
+                        if price > float(new_p.replace(',', '')):
+                            new_p = str(price)
+                            changed = True
+                    except ValueError:
+                        new_p = str(price)
+                        changed = True
+
+                if changed:
+                    min_max_updates.append((row_idx, new_o, new_p))
+                continue
+
+            # 全新列 -> 準備插入
+            cp1, cp2, cpw = r['cp1'], r['cp2'], r['cpw']
+            is_good = (cp1 <= thresholds['cp1_threshold'] or
+                       cp2 <= thresholds['cp2_threshold'] or
+                       cpw <= thresholds['cpw_threshold'])
+            good_str = "✅ 優於均值" if is_good else ""
+            const_str = ", ".join(r.get('max_const', []))
+            cp1_str = f"{cp1:.2f}" if cp1 != float('inf') else "-"
+            cp2_str = f"{cp2:.2f}" if cp2 != float('inf') else "-"
+            cpw_str = f"{cpw:.2f}" if cpw != float('inf') else "-"
+            profit = r.get('estimated_profit')
+            profit_str = f"+${profit:,.0f}" if profit and profit > 0 else (f"-${abs(profit):,.0f}" if profit else "-")
+            sid = r.get('seller_id', '')
+            is_big = sellers.get(sid, {}).get("count", 0) >= BIG_SELLER_THRESHOLD
+            seller_str = f"🍽️{sid}" if is_big else sid
+            rows_to_add.append([
+                now_str, r.get('post_time', ''), r['title'], price,
+                r['gold_char'], r['gold_weap'], cp1_str, cp2_str, cpw_str,
+                profit_str, const_str, good_str, seller_str, url,
+                str(price), str(price)
+            ])
+            url_row_map[url] = (-1, str(price), str(price))
+
+        # 批次更新 O/P 欄
+        if min_max_updates:
+            batch = [{'range': f'O{idx}:P{idx}', 'values': [[o, p]]}
+                     for idx, o, p in min_max_updates]
+            for i in range(0, len(batch), 500):
+                ws.batch_update(batch[i:i+500])
+                time.sleep(1)
+            print(f"  min/max 更新：{len(min_max_updates)} 筆")
+
+        if not rows_to_add:
+            print("  Google Sheets：無新資料")
+            return
+        gsheet_batch_insert(ws, rows_to_add)
+        print(f"  Google Sheets 更新：新增 {len(rows_to_add)} 筆")
+    except Exception as e:
+        print(f"  Google Sheets 更新失敗：{e}")
 
 def update_gsheet_completed(ws, new_trades, sellers, seen_map, high_tier_chars):
  if not ws or not new_trades:

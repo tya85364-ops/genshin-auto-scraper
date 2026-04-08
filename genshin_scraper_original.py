@@ -101,7 +101,14 @@ def build_games_config():
             "鍾離": "鐘離",
         },
         "鳴潮": {"卡卡": "卡卡羅"},
-        "崩鐵": {"花火": "花火", "阮梅": "阮•梅"},
+        "崩鐵": {
+            "花火": "花火", "火花": "花火", 
+            "阮梅": "阮•梅", "丹恆飲月": "丹恆•飲月", "飲月": "丹恆•飲月",
+            "蝶": "希兒", "龍": "丹恆•飲月", "黃": "黃泉", "鏡": "鏡流", 
+            "卡": "卡芙卡", "飛": "飛霄", "砂": "砂金", "符": "符玄", 
+            "銀": "銀狼", "鴨": "布洛妮婭", "托": "托帕", "黑": "黑天鵝",
+            "星": "星曆", "昔": "昔時的庭行", "月": "明月"
+        },
         "絕區零": {
             "鯊魚": "艾蓮", "鯊魚妹": "艾蓮", 
             "老鼠": "簡", "月城柳": "柳", "星見雅": "雅", 
@@ -942,8 +949,8 @@ def parse_title_smart(title, char_weights, alias_map):
     for match in re.finditer(r'(\d)\+(\d)\s*([\u4e00-\u9fffA-Za-z]+)', temp_title):
         add_char_const(match.group(3), int(match.group(1)), int(match.group(2)))
 
-    # 6. NM chars (like 61黃泉, 21流螢)
-    for match in re.finditer(r'(?:^|[^0-9])([0-6])([0-5])\s*([\u4e00-\u9fffA-Za-z]{2,})', temp_title):
+    # 6. NM chars (like 61黃泉, 21流螢, 61蝶)
+    for match in re.finditer(r'(?:^|[^0-9])([0-6])([0-5])\s*([\u4e00-\u9fffA-Za-z]+)', temp_title):
         add_char_const(match.group(3), int(match.group(1)), int(match.group(2)))
 
     # 7. Find any remaining chars in whole title
