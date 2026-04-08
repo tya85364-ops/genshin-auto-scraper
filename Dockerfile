@@ -10,12 +10,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # 複製程式碼與 tier list JSON（靜態設定檔）
 COPY genshin_scraper_original.py .
-COPY update_tier_lists.py .
 COPY discord_bot.py .
 COPY start.sh .
 COPY genshin_tier_list.json .
 COPY wutheringwaves_tier_list.json .
 COPY hsr_tier_list.json .
+COPY zzz_tier_list.json .
 
 # 確保腳本具備執行權限
 RUN chmod +x start.sh
