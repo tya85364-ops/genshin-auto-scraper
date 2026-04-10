@@ -238,9 +238,9 @@
     <span class="logo">🎯</span>
     <div>
       <div class="title">8591 看盤雷達</div>
-      <div class="subtitle" style="display:flex; align-items:center; gap:8px;">
-        即時查詢 · Google Sheets 直連
-        <button onclick="copyGeminiPrompt(this)" style="background:linear-gradient(90deg, var(--accent), var(--accent2)); border:none; border-radius:12px; color:#fff; font-size:10px; padding:3px 8px; font-weight:bold; cursor:pointer;" title="複製最新估價指令至剪貼簿">🤖 呼喚 Gemini估價</button>
+      <div class="subtitle" style="display:flex; align-items:center; gap:6px; margin-top:4px;">
+        <button onclick="copyGeminiPrompt(this)" style="background:linear-gradient(90deg, var(--accent), var(--accent2)); border:none; border-radius:8px; color:#fff; font-size:10px; padding:4px 8px; font-weight:bold; cursor:pointer;">🤖 複製規則</button>
+        <button onclick="downloadGeminiDatabase(this)" style="background:linear-gradient(90deg, #FF6B6B, #FF8E53); border:none; border-radius:8px; color:#fff; font-size:10px; padding:4px 8px; font-weight:bold; cursor:pointer;">📥 下載實時大數據檔</button>
       </div>
     </div>
   </div>
@@ -619,6 +619,68 @@ function copyGeminiPrompt(btn) {
       btn.style.background = oldBg;
     }, 2000);
   }).catch(() => alert('複製失敗，請手動複製'));
+}
+
+async function downloadGeminiDatabase(btn) {
+  const oldHtml = btn.innerHTML;
+  btn.innerHTML = '⏳ 抓取分析中...';
+  btn.disabled = true;
+
+  try {
+    const sheets = ['原神-成交紀錄', '崩鐵-成交紀錄', '鳴潮-成交紀錄', '絕區零-成交紀錄'];
+    let fullCSV = "";
+    
+    for (let i = 0; i < sheets.length; i++) {
+        const game = sheets[i].split('-')[0];
+        const res = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheets[i])}`);
+        if (!res.ok) throw new Error(sheets[i] + " 抓取失敗");
+        let text = await res.text();
+        fullCSV += `\n\n=========== 【${game}】歷史成交大數據庫 ===========\n` + text;
+    }
+    
+    const promptText = `# 歡迎進入：遊戲帳號市場估價 AI 系統指導手冊
+
+## 🎯 你的角色設定
+你是一位深諳 8591 市場行情的「遊戲帳號估價大師」與「談判專家」。你的任務是精準計算出特定帳號的「理論市場價值」，依照我們提供的【歷史成交大數據】進行比對找出相似案例，並指導使用者如何對賣家進行合理的「殺價交涉」。
+
+## 📊 第一部分：CPW 演算法 (估價底層邏輯)
+我們平台採用「加權積分制」來計算帳號價值。計算公式如下：
+1. **角色基礎分**：每一金（0命）算作 1 隻。滿命（6命）代表單一角色擁有 7 隻。
+2. **武器基礎分**：每一把專武算作 1 把。滿精煉（精5）代表 5 把。
+3. **加權系數 (Weight)**：
+   - **T0/SS級角色 (Meta頂點)**：權重為 2.5
+      - *原神名單*：火神、僕人、水龍王、絲柯克、奈芙爾 等最新幻神。
+      - *崩鐵名單*：黃泉、流螢、星期日 等。
+      - *絕區零名單*：白厄、遐蝶(蝶)、大黑塔 等。
+   - **T1/S級角色**：權重為 1.5
+   - **常駐/過氣老角色**：權重為 1.0 (或更低)
+4. **得分計算公式**：
+   - 角色總得分 = (金數) × 權重 × 10
+   - 專武總得分 = (精煉數) × 權重 × 5
+5. **現實台幣轉換率 (TWD)**：目前的市場行情約為 **「1 點加權得分 = 10 ~ 12 元新台幣」**。
+
+## 🗄️ 第二部分：實時歷史成交大數據庫
+以下是本系統今日直接從雲盤抓取的最新 8591 成交清單。使用者要估價時，請你在這份大數據中幫忙撈出「相似的角色配置」與「最終成交天數/賣價」，用以佐證你的估價不具主觀偏見且符合市場事實！
+`;
+    const finalContent = promptText + fullCSV;
+
+    const blob = new Blob([finalContent], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Gemini_估價資料庫_${new Date().toISOString().slice(0,10)}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    btn.innerHTML = '✅ 下載完成！';
+    setTimeout(() => { btn.innerHTML = oldHtml; btn.disabled = false; }, 3000);
+  } catch(e) {
+    alert("下載失敗：" + e.message);
+    btn.innerHTML = oldHtml;
+    btn.disabled = false;
+  }
 }
 
 // Live filter on typing (debounced)
