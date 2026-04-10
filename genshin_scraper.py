@@ -145,26 +145,52 @@ def build_games_config():
 # ===================== listing_seen 新版（含時間戳記）=====================
 
 def load_listing_seen(filepath):
- if os.path.exists(filepath):
-  with open(filepath, "r", encoding="utf-8") as f:
-   data = json.load(f)
-  urls = data.get("urls", [])
-  seen_map = data.get("seen_map", {})
-  for url in urls:
-   if url not in seen_map:
-    seen_map[url] = {"first_seen": ""}
-   elif isinstance(seen_map[url], str):
-    seen_map[url] = {"first_seen": seen_map[url]}
-  return seen_map
- return {}
+    _id = os.path.basename(filepath)
+    col = _mongo("listing_seen")
+    if col is not None:
+        try:
+            doc = col.find_one({"_id": _id})
+            if doc:
+                seen_map = doc.get("seen_map", {})
+                for url in doc.get("urls", []):
+                    if url not in seen_map:
+                        seen_map[url] = {"first_seen": ""}
+                    elif isinstance(seen_map[url], str):
+                        seen_map[url] = {"first_seen": seen_map[url]}
+                return seen_map
+        except Exception as e:
+            print(f"  MongoDB load_listing_seen 失敗：{e}")
+    if os.path.exists(filepath):
+        with open(filepath, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        urls = data.get("urls", [])
+        seen_map = data.get("seen_map", {})
+        for url in urls:
+            if url not in seen_map:
+                seen_map[url] = {"first_seen": ""}
+            elif isinstance(seen_map[url], str):
+                seen_map[url] = {"first_seen": seen_map[url]}
+        return seen_map
+    return {}
 
 def save_listing_seen(filepath, seen_map):
- with open(filepath, "w", encoding="utf-8") as f:
-  json.dump({
-   "urls": list(seen_map.keys()),
-   "seen_map": seen_map,
-   "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M")
-  }, f, ensure_ascii=False, indent=2)
+    data = {
+        "urls": list(seen_map.keys()),
+        "seen_map": seen_map,
+        "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M")
+    }
+    try:
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+    col = _mongo("listing_seen")
+    if col is not None:
+        try:
+            _id = os.path.basename(filepath)
+            col.replace_one({"_id": _id}, {**data, "_id": _id}, upsert=True)
+        except Exception as e:
+            print(f"  MongoDB save_listing_seen 失敗：{e}")
 
 def _first_seen_date(entry):
  """seen_map entry (str or dict) -> first_seen string"""
@@ -456,15 +482,67 @@ def update_gsheet_completed(ws, new_trades, sellers, seen_map, high_tier_chars):
 
 # ===================== 降價追蹤 =====================
 
+_mongo_client = None
+
+def _mongo(collection):
+    """取得指定 MongoDB collection，無 MONGODB_URI 或失敗時回傳 None。"""
+    global _mongo_client
+    uri = os.getenv("MONGODB_URI", "")
+    if not uri:
+        return None
+    try:
+        from pymongo import MongoClient
+        if _mongo_client is None:
+            _mongo_client = MongoClient(uri, serverSelectionTimeoutMS=5000)
+        # URI 有帶 db name 就用 get_default_database，否則 fallback scraper_db
+        try:
+            db = _mongo_client.get_default_database()
+        except Exception:
+            db = _mongo_client["scraper_db"]
+        return db[collection]
+    except Exception as e:
+        print(f"  MongoDB 連線失敗（本地模式）：{e}")
+        return None
+
 def load_price_tracker():
- if os.path.exists(PRICE_TRACKER_FILE):
- with open(PRICE_TRACKER_FILE, "r", encoding="utf-8") as f:
- return json.load(f)
- return {}
+    """優先從 MongoDB 讀，失敗則讀本地 JSON。"""
+    col = _mongo("price_tracker")
+    if col is not None:
+        try:
+            doc = col.find_one({"_id": "price_tracker"})
+            if doc:
+                doc.pop("_id", None)
+                print(f"  price_tracker 從 MongoDB 載入（共 {sum(len(v) for v in doc.values())} 筆）")
+                return doc
+        except Exception as e:
+            print(f"  MongoDB 讀取失敗：{e}")
+    # Fallback: 本地 JSON
+    if os.path.exists(PRICE_TRACKER_FILE):
+        with open(PRICE_TRACKER_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        print(f"  price_tracker 從本地 JSON 載入（共 {sum(len(v) for v in data.values())} 筆）")
+        return data
+    return {}
 
 def save_price_tracker(tracker):
- with open(PRICE_TRACKER_FILE, "w", encoding="utf-8") as f:
- json.dump(tracker, f, ensure_ascii=False, indent=2)
+    """同時寫入 MongoDB 與本地 JSON（互為備援）。"""
+    # 寫本地 JSON（本機執行 or 備份用）
+    try:
+        with open(PRICE_TRACKER_FILE, "w", encoding="utf-8") as f:
+            json.dump(tracker, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"  price_tracker 本地儲存失敗：{e}")
+
+    # 寫 MongoDB
+    col = _mongo("price_tracker")
+    if col is not None:
+        try:
+            doc = {**tracker, "_id": "price_tracker"}
+            col.replace_one({"_id": "price_tracker"}, doc, upsert=True)
+            total = sum(len(v) for v in tracker.values())
+            print(f"  price_tracker 已存 MongoDB（共 {total} 筆）")
+        except Exception as e:
+            print(f"  MongoDB 儲存失敗：{e}")
 
 def check_price_drop(tracker, listings, discord_url, emoji, name):
  dropped = []
@@ -636,14 +714,26 @@ def send_discord(webhook_url, content):
  print(f" Discord 失敗：{e}")
 
 def load_stats(filepath):
- if os.path.exists(filepath):
- with open(filepath, "r", encoding="utf-8") as f:
- data = json.load(f)
- if "records" not in data:
- data["records"] = []
- return data
- return {"count": 0, "cp1_sum": 0, "cp2_sum": 0, "cpw_sum": 0,
- "price_sum": 0, "gold_char_sum": 0, "records": [], "last_updated": ""}
+    _id = os.path.basename(filepath)
+    col = _mongo("stats")
+    if col is not None:
+        try:
+            doc = col.find_one({"_id": _id})
+            if doc:
+                doc.pop("_id", None)
+                if "records" not in doc:
+                    doc["records"] = []
+                return doc
+        except Exception as e:
+            print(f"  MongoDB load_stats 失敗：{e}")
+    if os.path.exists(filepath):
+        with open(filepath, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if "records" not in data:
+            data["records"] = []
+        return data
+    return {"count": 0, "cp1_sum": 0, "cp2_sum": 0, "cpw_sum": 0,
+            "price_sum": 0, "gold_char_sum": 0, "records": [], "last_updated": ""}
 
 def update_stats(stats, new_trades, filepath):
  valid = [r for r in new_trades if r['cp1'] != float('inf')]
@@ -666,8 +756,18 @@ def update_stats(stats, new_trades, filepath):
  "cpw": round(r['cpw'], 2) if r['cpw'] != float('inf') else None,
  })
  stats["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M")
- with open(filepath, "w", encoding="utf-8") as f:
- json.dump(stats, f, ensure_ascii=False, indent=2)
+ try:
+  with open(filepath, "w", encoding="utf-8") as f:
+   json.dump(stats, f, ensure_ascii=False, indent=2)
+ except Exception:
+  pass
+ col = _mongo("stats")
+ if col is not None:
+  try:
+   _id = os.path.basename(filepath)
+   col.replace_one({"_id": _id}, {**stats, "_id": _id}, upsert=True)
+  except Exception as e:
+   print(f"  MongoDB save_stats 失敗：{e}")
  return stats
 
 def get_thresholds(stats):
@@ -689,21 +789,50 @@ def get_thresholds(stats):
  }
 
 def load_seen(filepath, key="urls"):
- if os.path.exists(filepath):
- with open(filepath, "r", encoding="utf-8") as f:
- return set(json.load(f).get(key, []))
- return set()
+    _id = os.path.basename(filepath)
+    col = _mongo("seen")
+    if col is not None:
+        try:
+            doc = col.find_one({"_id": _id})
+            if doc:
+                return set(doc.get(key, []))
+        except Exception as e:
+            print(f"  MongoDB load_seen 失敗：{e}")
+    if os.path.exists(filepath):
+        with open(filepath, "r", encoding="utf-8") as f:
+            return set(json.load(f).get(key, []))
+    return set()
 
 def save_seen(filepath, seen, key="urls"):
- with open(filepath, "w", encoding="utf-8") as f:
- json.dump({key: list(seen),
- "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M")}, f)
+    data = {key: list(seen), "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M")}
+    try:
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(data, f)
+    except Exception:
+        pass
+    col = _mongo("seen")
+    if col is not None:
+        try:
+            _id = os.path.basename(filepath)
+            col.replace_one({"_id": _id}, {**data, "_id": _id}, upsert=True)
+        except Exception as e:
+            print(f"  MongoDB save_seen 失敗：{e}")
 
 def load_sellers(filepath):
- if os.path.exists(filepath):
- with open(filepath, "r", encoding="utf-8") as f:
- return json.load(f)
- return {}
+    _id = os.path.basename(filepath)
+    col = _mongo("sellers")
+    if col is not None:
+        try:
+            doc = col.find_one({"_id": _id})
+            if doc:
+                doc.pop("_id", None)
+                return doc
+        except Exception as e:
+            print(f"  MongoDB load_sellers 失敗：{e}")
+    if os.path.exists(filepath):
+        with open(filepath, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
 
 def update_sellers(sellers, trades, filepath):
  for r in trades:
@@ -717,8 +846,18 @@ def update_sellers(sellers, trades, filepath):
  sellers[sid]["titles"].append(r["title"][:30])
  sellers[sid]["prices"] = sellers[sid]["prices"][-50:]
  sellers[sid]["titles"] = sellers[sid]["titles"][-50:]
- with open(filepath, "w", encoding="utf-8") as f:
- json.dump(sellers, f, ensure_ascii=False, indent=2)
+ try:
+  with open(filepath, "w", encoding="utf-8") as f:
+   json.dump(sellers, f, ensure_ascii=False, indent=2)
+ except Exception:
+  pass
+ col = _mongo("sellers")
+ if col is not None:
+  try:
+   _id = os.path.basename(filepath)
+   col.replace_one({"_id": _id}, {**sellers, "_id": _id}, upsert=True)
+  except Exception as e:
+   print(f"  MongoDB update_sellers 失敗：{e}")
  return sellers
 
 def init_excel(filepath):

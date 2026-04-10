@@ -1,0 +1,140 @@
+# 📋 8591 帳號監視器 - Version 1.4
+
+> 建立日期：2026-04-06
+> 基於：Version 1.3 (genshin_scraper.py) + 後續優化整理 (knowledge_notes_20260402.md)
+
+---
+
+## 🆕 Version 1.3 → 1.4 新增 / 修正
+
+**版本說明：**
+此版本為 1.3 部署後實際運行中踩到的坑及優化，並非從頭規劃，而是根據 `knowledge_notes_20260402.md` 中記錄的維護經驗整理而成。
+
+---
+
+### 1. 售出天數四層推算法（`calc_days_on_market` 改良）
+
+**問題根源：** 賣家習慣「改價格、重新拋售」，導致成交紀錄對應的 URL 已失效，無法推算真實上架天數。
+
+**改動方式（`genshin_scraper.py`）：**
+
+```
+Method A（詳情頁直抓） → Method B（URL tracking） → Method C（標題追蹤）→ Method D（賣家追蹤）
+```
+
+- **Method A**：進詳情頁直接抓 `YYYY-MM-DD` 格式上架時間（最精確）
+- **Method B**：比對 `listing_seen` 中該 URL 的 `first_seen` 日期
+- **Method C**：建立 `__title_idx__` 字典，記錄標題最早出現日（破解改價重拋）
+- **Method D**：建立 `__seller_idx__` 字典，用賣家最早活躍日估計
+  - ⚠️ **大盤商豁免**：若 `is_big_seller`（成交 ≥ BIG_SELLER_THRESHOLD），**強制略過 Method D**，避免大盤商的所有新商品天數被無限放大
+
+**新增函數：**
+- `find_listing_date_by_seller(seller_id, title, seen_map)` — URL 找不到時，用 seller_id fuzzy match 找同賣家最早 first_seen，金角數相符者優先
+
+**`seen_map` 結構升級：**
+- 舊版：`{url: "YYYY-MM-DD"}` (純字串)
+- 新版：`{url: {"first_seen": "YYYY-MM-DD", "title": "...", "seller_id": "..."}}`
+- 相容舊格式：`_first_seen_date()` 函數自動處理 str/dict 兩種格式
+
+---
+
+### 2. 極端值剔除系統（`get_trimmed_mean`）
+
+**問題根源：** 賣家亂標價（如 $999999）導致 CP 均值被拉高，門檻失準。
+
+**改動：** 計算 CP1/CP2/CPW/price 歷史均值時，使用 Trimmed Mean（**自動剔除最高與最低 15% 的紀錄**），確保門檻不受極端值影響。
+
+```python
+def get_trimmed_mean(values, trim=0.15):
+    if not values:
+        return 0
+    n = len(values)
+    cut = max(1, int(n * trim))
+    trimmed = sorted(values)[cut:-cut] if n > 2 * cut else values
+    return sum(trimmed) / len(trimmed)
+```
+
+影響函數：`get_thresholds(stats)` — 所有均值改用 `get_trimmed_mean` 計算
+
+---
+
+### 3. 雙軌掃描機制（`fast_track_scan`）
+
+**問題根源：** Playwright 每次進詳情頁極度耗時，導致即時性很差。
+
+**改動：** 導入輕量快速掃描 `fast_track_scan`，只掃首頁清單，不進詳情頁。
+- 配合嚴苛條件（只過濾絕對超值品）即時警報
+- 主爬蟲照常跑詳細分析
+- 大幅提升 Discord 推播的即時性
+
+---
+
+### 4. Railway 資源限制應對
+
+**問題根源：** Railway Free Trial 500小時額度，`while True:` 常駐約 20 天耗盡。
+
+**應對：**
+- 排程從 **10 分鐘改為 30 分鐘**（降低運算負載）
+- 準備新 GitHub + Railway 帳號的無縫轉移 SOP（詳見 knowledge_notes）
+
+---
+
+### 5. 空窗期補漏 SOP
+
+新帳號部署後，運行空窗期的成交紀錄可能漏記。處置流程：
+
+1. 執行 `sync_missing_completed.py` — 從 MongoDB 撈回空窗期記錄直接補進 Google Sheets
+2. 執行 `backfill_days.py` — 對補回的舊資料補算「售出所需天數」
+
+---
+
+## 📁 版本對應檔案
+
+| 版本 | 主程式 | 備注 |
+|------|--------|------|
+| 1.3  | `1.3 -version.txt` 內嵌 | 基準版本 |
+| 1.4  | `genshin_scraper.py` (38KB) | 目前線上運行版 |
+| 1.4+ | `genshin_scraper_original.py` (73KB) | 最完整開發版（含雙軌掃描等） |
+
+---
+
+## 🔧 已知問題 / 待處理
+
+- [ ] **Tier List 路徑硬編碼**：`TIER_LIST_FILES` 仍指向 `C:\Users\toge\...`，Railway 環境找不到檔案，改用環境變數或嵌入預設值
+- [ ] **GCP_KEY_FILE 路徑**：`genshin_scraper.py` 用 `/app/gcp_key.json`（Railway 路徑），本地跑需手動改
+- [ ] **成交紀錄漏記問題**（原始問題）：根因為 `stop_at_seen` 機制遇到舊 URL 就停止翻頁，如果成交頁面排序不穩定（新交易插在中間），可能漏掉部分新紀錄
+
+---
+
+## 📊 Version 發展總覽
+
+| 版本 | 關鍵功能 |
+|------|---------|
+| 1.1 | 預估獲利、降價警告、撿漏、新角滿命、Tier List |
+| 1.2 | 三個 Tier List JSON、高Tier標註、大盤商追蹤 |
+| 1.3 | 成交紀錄分頁、售出天數、降價統一頻道、14欄修正 |
+| 1.4 | 四層天數推算、Trimmed Mean 均值、雙軌掃描、Railway SOP |
+
+---
+
+## 🚀 執行指令
+
+```powershell
+# 本地
+py -3.12 genshin_scraper.py
+
+# Railway 部署（確保環境變數齊全）
+# TZ = Asia/Taipei
+# MONGODB_URI = mongodb+srv://...
+# GCP_KEY_JSON = {...}
+```
+
+---
+
+## 📌 關鍵防呆
+
+**換 Railway 帳號必做：**
+1. 設 `TZ = Asia/Taipei`
+2. 設 `MONGODB_URI`（系統大腦，缺了會失憶整個 Discord 洗版）
+3. 設 `GCP_KEY_JSON`（透過單獨 Edit 貼上，**禁用 Raw Editor**，有 `\n` 解析 Bug）
+4. 部署後跑一次 `sync_missing_completed.py` + `backfill_days.py`
