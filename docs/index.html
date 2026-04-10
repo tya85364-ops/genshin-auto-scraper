@@ -629,15 +629,23 @@ async function downloadGeminiDatabase(btn) {
   btn.disabled = true;
 
   try {
-    const sheets = ['原神-成交紀錄', '崩鐵-成交紀錄', '鳴潮-成交紀錄', '絕區零-成交紀錄'];
+    const sheets = [
+      '原神-成交紀錄', '原神', 
+      '崩鐵-成交紀錄', '崩鐵', 
+      '鳴潮-成交紀錄', '鳴潮', 
+      '絕區零-成交紀錄', '絕區零'
+    ];
     let fullCSV = "";
     
     for (let i = 0; i < sheets.length; i++) {
-        const game = sheets[i].split('-')[0];
+        const gameName = sheets[i].split('-')[0];
+        const isCompleted = sheets[i].includes('成交紀錄');
+        const dataType = isCompleted ? "歷史成交大數據庫" : "【現正在架售賣中】最新貨源";
+        
         const res = await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheets[i])}`);
         if (!res.ok) throw new Error(sheets[i] + " 抓取失敗");
         let text = await res.text();
-        fullCSV += `\n\n=========== 【${game}】歷史成交大數據庫 ===========\n` + text;
+        fullCSV += `\n\n=========== 【${gameName}】${dataType} ===========\n` + text;
     }
     
     const promptText = `# 歡迎進入：遊戲帳號市場估價 AI 系統指導手冊
@@ -663,6 +671,10 @@ async function downloadGeminiDatabase(btn) {
 
 ## 🗄️ 第二部分：實時歷史成交大數據庫
 以下是本系統今日直接從雲盤抓取的最新 8591 成交清單。使用者要估價時，請你在這份大數據中幫忙撈出「相似的角色配置」與「最終成交天數/賣價」，用以佐證你的估價不具主觀偏見且符合市場事實！
+
+## 🛍️ 第三部分：現正在架售賣中（最新熱門貨源清單）
+這部分包含了四大板塊目前**「最新、熱騰騰還在架上」**的活躍賣場紀錄。
+當使用者請你幫忙「找帳號」時，你可以直接從這個區塊的大數據中，根據使用者的預算或角色偏好，大海撈針挑選出 **「目前市面上 CP 值最高、配置最好」** 的幾個完美優質帳號，並將他們的『標題』與『價錢』列出來強力推薦給使用者，做他的超級採購雷達！
 `;
     const finalContent = promptText + fullCSV;
 
