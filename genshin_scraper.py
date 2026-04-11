@@ -13,6 +13,7 @@ TRASH_KEYWORDS = ["徵", "代練", "初始號"]
 BIG_SELLER_THRESHOLD = 5
 RECENT_DAYS = 10
 PRICE_DROP_THRESHOLD = 0.15
+DISCORD_PRICE_DROP = "https://discord.com/api/webhooks/1485605514284105770/F0fPL4zY9MVr0xDq3yXFwVawG4d-mdsGB9D1H1TjdCcAjwPEdzbluMbUyqXmMC8sV-Tu"
 BARGAIN_THRESHOLD = 0.50
 PLATFORM_FEE = 0.94
 SPREADSHEET_ID = "1SOt-2DwJVEcEgvuvQfAvW6ue6WcrnvywxPbKIJFEcYI"
@@ -1167,7 +1168,7 @@ def run_game(main_page, detail_page, game_key, g, gc, price_tracker):
  save_listing_seen(g["listing_seen_file"], listing_seen_map)
 
  game_tracker = price_tracker.get(name, {})
- game_tracker = check_price_drop(game_tracker, valid, g["discord"], emoji, name)
+ game_tracker = check_price_drop(game_tracker, valid, DISCORD_PRICE_DROP, emoji, name)
  price_tracker[name] = game_tracker
 
  update_excel(g["excel"], valid, thresholds, sellers)
