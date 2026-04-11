@@ -1282,7 +1282,7 @@ def run_scrape():
  detail_page = browser.new_page(
  user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
 
- for game_key in ["原神", "鳴潮", "崩鐵"]:
+ for game_key in ["原神", "鳴潮", "崩鐵", "絕區零"]:
  try:
  run_game(main_page, detail_page, game_key, GAMES[game_key], gc, price_tracker)
  except Exception as e:
@@ -1293,10 +1293,23 @@ def run_scrape():
  save_price_tracker(price_tracker)
  print(f"\n✅ 全部完成！{datetime.now().strftime('%H:%M:%S')}")
 
+def run_daily_maintenance():
+ """每日例行：統一大盤商標記 & 成交天數推算補寫回 Google Sheet。"""
+ print("⏰ 執行每日維護 (大盤商標記 & 天數回補)...")
+ try:
+  import subprocess, sys
+  subprocess.run(
+   [sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "daily_maintenance.py")],
+   check=True
+  )
+ except Exception as e:
+  print(f"每日維護失敗: {e}")
+
 if __name__ == "__main__":
  print("⏰ 排程啟動，每30分鐘執行一次（立即先跑一次）")
  run_scrape()
  schedule.every(30).minutes.do(run_scrape)
+ schedule.every().day.at("18:00").do(run_daily_maintenance)
  while True:
  schedule.run_pending()
  time.sleep(60)
