@@ -1568,6 +1568,35 @@ def run_game(main_page, detail_page, game_key, g, gc, price_tracker):
 
     game_tracker = price_tracker.get(name, {})
     game_tracker = check_price_drop(game_tracker, valid, g["discord"], emoji, name)
+
+        # === Custom Target Price Alerts ===
+        try:
+            from pymongo import MongoClient
+            client = MongoClient(os.environ.get("MONGODB_URI", "mongodb+srv://genshin:genshin123@cluster0.svtlvs0.mongodb.net/scraper_db?appName=Cluster0"), serverSelectionTimeoutMS=5000)
+            db = client.get_default_database()
+            targets = list(db["custom_targets"].find({"alerted": False}))
+            
+            for t in targets:
+                t_url = t["_id"]
+                t_price = t.get("target_price", 0)
+                
+                # Check if this target URL is in the currently fetched valid listings
+                for v in valid:
+                    if v["url"] == t_url and v["price"] <= t_price:
+                        # TRIGGER ALERT
+                        msg = f"🔔 **【自訂降價通報】** 價格已達標！\n" \
+                              f"你追蹤的商品已降至或低於目標價 **${t_price}**！\n" \
+                              f"**目前售價**: ${v['price']} (CP: {v.get('cp1_score',0):.2f})\n" \
+                              f"[{v.get('title', '點擊前往商品')}]({t_url})"
+                        requests.post("https://discord.com/api/webhooks/1492395080659505354/7vzP6so0A0FbvPw9bLM5K1s7oCLxHIIk3M2n0MxYJzUt4Ns_8xrG3TDMXD_wjgSOfRGA", 
+                            json={"content": msg}, timeout=5)
+                        
+                        # Mark as alerted so it doesn't spam
+                        db["custom_targets"].update_one({"_id": t_url}, {"$set": {"alerted": True}})
+                        break
+        except Exception as e:
+            print("[CustomTarget] Error:", e)
+
     price_tracker[name] = game_tracker
 
     update_excel(g["excel"], valid, thresholds, sellers)

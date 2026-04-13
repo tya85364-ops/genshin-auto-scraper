@@ -421,6 +421,8 @@ function renderChart(items) {
 
 <script>
 const SHEET_ID = '1SOt-2DwJVEcEgvuvQfAvW6ue6WcrnvywxPbKIJFEcYI';
+const API_BASE = 'https://genshin-auto-scraper-production.up.railway.app';
+let customTargets = {};
 
 const COLS = {
   in_progress: { date:0, title:2, price:3, gold:4, cp1:6, seller:12, url:13 },
@@ -433,6 +435,59 @@ let rawRows = [];
 let sortBy = 'cp';  // 'cp' or 'price'
 
 // Favorites storage
+
+async function fetchTargets() {
+  try {
+    const res = await fetch(`${API_BASE}/api/targets`);
+    const json = await res.json();
+    if(json.status === 'ok') {
+      customTargets = {};
+      json.data.forEach(t => { customTargets[t._id] = t; });
+    }
+  } catch(e) {}
+}
+
+async function promptTarget(e, url, title) {
+  e.preventDefault(); e.stopPropagation();
+  const current = customTargets[url];
+  let msg = `【${title}】
+請輸入你想追蹤的目標下降金額：
+(目前追蹤中：${current ? '$'+current.target_price : '無'})`;
+  let ask = prompt(msg, current ? current.target_price : '');
+  if(ask === null) return;
+  const price = parseInt(ask);
+  if(isNaN(price) || price <= 0) {
+    // Delete target
+    if(current) {
+        if(confirm('要取消對此商品的追蹤嗎？')) {
+            await fetch(`${API_BASE}/api/targets/${encodeURIComponent(url)}`, { method: 'DELETE' });
+            delete customTargets[url];
+            alert("已取消追蹤");
+            doSearch();
+        }
+    }
+    return;
+  }
+  
+  // Set target
+  try {
+    const res = await fetch(`${API_BASE}/api/targets`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: url, target_price: price, title: title })
+    });
+    if(res.ok) {
+      alert(`✅ 設定成功！降到 ${price} 元時將在 DC 通知！`);
+      customTargets[url] = { target_price: price };
+      doSearch(); // re-render to update UI
+    } else {
+      alert("設定失敗，請確認你的伺服器 API 是否上線。");
+    }
+  } catch(err) {
+    alert("連線失敗：" + err.message);
+  }
+}
+
 function getFavorites() {
   try { return JSON.parse(localStorage.getItem('eight591_favs') || '{}'); }
   catch(e) { return {}; }
@@ -636,12 +691,12 @@ function renderResults(items, isFavoritesMode = false) {
     const href = r.url || '#';
     const cpDisplay = r.cp1 < 900 ? `CP ${r.cp1.toFixed(2)}` : '—';
     const isFav = !!favs[r.url];
+    const isTargeted = !!customTargets[r.url];
     const dataStr = encodeURIComponent(JSON.stringify(r));
     
     let sellerHtml = '';
     if (r.seller) {
-      // If seller ID is purely numeric, make it a clickable badge to userAppraise
-      let sRaw = r.seller.replace(/[^a-zA-Z0-9]/g, ''); // strip emojis
+      let sRaw = r.seller.replace(/[^a-zA-Z0-9]/g, '');
       if (/^\d+$/.test(sRaw)) {
         sellerHtml = `<span class="badge badge-seller clickable" onclick="openSeller(event, '${sRaw}')">👤 賣家:${sRaw}</span>`;
       } else {
@@ -650,6 +705,7 @@ function renderResults(items, isFavoritesMode = false) {
     }
 
     return `<a class="card" href="${href}" target="_blank" rel="noopener">
+      <button class="fav-btn ${isTargeted ? 'active' : ''}" style="right: 68px; font-size:20px; color:${isTargeted ? '#00E676' : 'rgba(255,255,255,0.6)'}; border-color:${isTargeted ? '#00E676' : 'rgba(255,255,255,0.2)'}; text-shadow:${isTargeted ? '0 0 10px #00E676' : 'none'};" onclick="promptTarget(event, '${r.url}', '${escHtml(r.title).replace(/'/g, "\\'")}')">🔔</button>
       <button class="fav-btn ${isFav ? 'active' : ''}" onclick="toggleFav(event, '${r.url}', '${dataStr}')">${isFav ? '★' : '☆'}</button>
       <div class="card-top">
         <div class="card-price">$${r.price.toLocaleString()}</div>
