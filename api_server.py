@@ -82,9 +82,17 @@ def delete_target(url):
     return jsonify({"status": "ok"}), 200
 
 # ─── Entry point ────────────────────────────────────────────────────────────
+# Called at module level so gunicorn --preload also triggers it
+_workers_started = False
+def _ensure_workers():
+    global _workers_started
+    if not _workers_started:
+        start_workers()
+        _workers_started = True
+
+_ensure_workers()
+
 if __name__ == '__main__':
-    start_workers()
-    port = int(os.environ.get("PORT", 5000))
-    print(f"[API] Flask listening on 0.0.0.0:{port}")
-    # threaded=True so Flask doesn't block on slow Mongo calls
+    port = int(os.environ.get("PORT", 31422))
+    print(f"[API] Flask dev server on 0.0.0.0:{port}")
     app.run(host='0.0.0.0', port=port, threaded=True)
