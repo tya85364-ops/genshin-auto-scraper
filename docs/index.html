@@ -761,9 +761,34 @@ function buildPairings(title) {
   return pairings;
 }
 
+
+// 縮寫展開：把 "6火", "2洽", "0黃" 展開成 "6命 火神" 等正式詞語
+function normalizeKw(kw) {
+  // 先把所有角色詞彙合併成一個清單，按長度由長到短排序
+  const allCharWords = CHAR_GROUPS.flatMap(g => g).sort((a, b) => b.length - a.length);
+  // 數字對應的命座說法
+  const numToLevel = {'0':'0命','1':'1命','2':'2命','3':'3命','4':'4命','5':'5命','6':'6命','7':'6命','8':'6命','9':'6命'};
+
+  // 嘗試把 "6火", "6+1洽" 中的數字前綴+角色名縮寫展開
+  kw = kw.replace(/(\d+(?:\+\d*)?)\s*([^\d\s+]{1,4})/g, (match, numPart, charPart) => {
+    // 找到 charPart 最接近的角色
+    for (const word of allCharWords) {
+      if (word.startsWith(charPart) || charPart === word.slice(0,1) || (charPart.length >= 2 && word.includes(charPart))) {
+        const baseNum = numPart.split('+')[0];
+        const levelStr = numToLevel[baseNum] || (parseInt(baseNum) >= 6 ? '6命' : baseNum + '命');
+        return levelStr + ' ' + word;
+      }
+    }
+    return match; // 無法展開，原樣保留
+  });
+
+  return kw;
+}
+
 function smartMatch(title, kw) {
   title = title.toLowerCase();
   kw = kw.toLowerCase();
+  kw = normalizeKw(kw);
 
   let rem = kw;
   const searchedCharGroups = [];
