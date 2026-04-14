@@ -613,6 +613,84 @@ function toggleCustomDate() {
   if (v !== 'custom') applyFilter();
 }
 
+// === 同義字與模糊搜尋擴充 ===
+const SYN_GROUPS = [
+  // 角色群組
+  ['火神', '瑪薇卡', 'mavuika', '瑪薇'],
+  ['水神', '芙寧娜', 'furina', '芙芙'],
+  ['雷神', '雷電將軍', '雷電', 'raiden', '影'],
+  ['草神', '納西妲', 'nahida', '小草神'],
+  ['風神', '溫迪', 'venti'],
+  ['岩神', '鍾離', 'zhongli', '帝君'],
+  ['冰神', '冰之女皇', 'tsaritsa'],
+  ['夜后', '夜天后', '夜蘭', 'yelan'],
+  ['龍王', '水龍王', '那維萊特', '那維', 'neuvillette'],
+  ['僕人', '阿蕾奇諾', 'arlecchino'],
+  
+  ['黃泉', '巡海遊俠', 'acheron'], 
+  ['流螢', '薩姆', 'firefly'],
+  ['砂金', '總管', 'aventurine'],
+  ['卡媽', '卡芙卡', 'kafka'],
+  ['花火', 'sparkle'],
+  ['知更鳥', 'robin'],
+  ['星期日', 'sunday'],
+  
+  ['鯊魚', '艾蓮', 'ellen'],
+  ['朱鳶', 'zhuyuan'],
+  ['老鼠', '簡', 'jane'],
+  ['青衣', 'qingyi'],
+  ['雅', '星見雅', 'miyabi'],
+  ['柳', '月城柳', 'yanagi'],
+
+  // 命座群組 (互通)
+  ['6+1', '6+5', '6命', '滿命', '6+', '滿命滿精', '6+2', '6+3', '6+4', '滿命專武', '滿魂', '滿星魂', '6魂', '6星魂', '滿影畫', '6影', '6影畫', '滿鏈', '6鏈'],
+  ['2+1', '2命', '2+', '2+2', '2魂', '2星魂', '2影', '2影畫', '2鏈'],
+  ['1+1', '1命', '1+', '1魂', '1星魂', '1影', '1影畫', '1鏈'],
+  ['0+1', '0命', '零命', '0魂', '0星魂', '0影', '0影畫', '0鏈'],
+  ['專武', '滿精', '精5', '1精', '光錐', '音擎']
+].map(g => g.sort((a, b) => b.length - a.length));
+
+function smartMatch(title, kw) {
+  title = title.toLowerCase();
+  kw = kw.toLowerCase();
+  
+  let remainingKw = kw;
+  const matchedGroups = [];
+  
+  // 為了避免短詞誤判，已在上方以長度排序
+  for (const group of SYN_GROUPS) {
+    let hitWord = null;
+    for (const word of group) {
+      if (remainingKw.includes(word.toLowerCase())) {
+        hitWord = word.toLowerCase();
+        break;
+      }
+    }
+    if (hitWord) {
+      matchedGroups.push(group);
+      remainingKw = remainingKw.replace(hitWord, '');
+    }
+  }
+  
+  for (const group of matchedGroups) {
+    let groupHit = false;
+    for (const word of group) {
+      if (title.includes(word.toLowerCase())) {
+        groupHit = true;
+        break;
+      }
+    }
+    if (!groupHit) return false; 
+  }
+  
+  const leftover = remainingKw.trim().split(/\s+/).filter(x => x);
+  for (const part of leftover) {
+    if (!title.includes(part)) return false;
+  }
+  
+  return true;
+}
+
 function applyFilter() {
   if (currentSheet === 'favorites') return;
   const kw      = document.getElementById('keyword').value.trim().toLowerCase();
@@ -636,7 +714,7 @@ function applyFilter() {
 
     if (price === 0) continue;
     if (price < pMin || price > pMax) continue;
-    if (kw && !title.toLowerCase().includes(kw)) continue;
+    if (kw && !smartMatch(title.toLowerCase(), kw)) continue;
     if (cpMax < 999 && cp1 > cpMax) continue;
 
     let dateStr = g(c.date).slice(0,10).replace(/[^\d-]/g, '');
