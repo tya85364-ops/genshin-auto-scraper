@@ -613,71 +613,201 @@ function toggleCustomDate() {
   if (v !== 'custom') applyFilter();
 }
 
-// === 智慧同義搜尋擴充 ===
-const SYN_GROUPS = [
-  // 原神角色
-  ['火神', '瑪薇卡', 'mavuika', '瑪薇'],
-  ['水神', '芙寧娜', 'furina', '芙芙'],
-  ['雷神', '雷電將軍', '雷電', 'raiden'],
-  ['草神', '納西妲', 'nahida', '小草神'],
-  ['風神', '溫迪', 'venti'],
-  ['岩神', '鍾離', 'zhongli', '帝君'],
-  ['冰神', '冰之女皇', 'tsaritsa'],
-  ['夜后', '夜天后', '夜蘭', 'yelan'],
-  ['龍王', '那維萊特', '那維', 'neuvillette'],
-  ['僕人', '阿蕾奇諾', 'arlecchino'],
-  // 崩鐵角色
-  ['黃泉', '巡海遊俠', 'acheron'],
-  ['流螢', '薩姆', 'firefly'],
-  ['砂金', '總管', 'aventurine'],
-  ['卡媽', '卡芙卡', 'kafka'],
-  ['花火', 'sparkle'],
-  ['知更鳥', 'robin'],
-  ['星期日', 'sunday'],
-  // 絕區零角色
-  ['鯊魚', '艾蓮', 'ellen'],
-  ['老鼠', '簡', 'jane'],
-  ['雅', '星見雅', 'miyabi'],
-  ['柳', '月城柳', 'yanagi'],
-  // 命座群組 (原神6命 / 崩鐵星魂 / 絕區零影畫 / 鳴潮鏈)
-  ['6+1','6+2','6+3','6+4','6+5','6命','滿命','滿魂','滿星魂','6魂','6星魂','滿影畫','6影','6影畫','滿鏈','6鏈','滿命專武','滿命滿精'],
-  ['2+1','2命','2魂','2星魂','2影','2影畫','2鏈'],
-  ['1+1','1命','1魂','1星魂','1影','1影畫','1鏈'],
-  ['0+1','0命','零命','0魂','0星魂','0影','0影畫','0鏈'],
-  ['專武','滿精','精5','1精','光錐','音擎'],
-].map(g => g.sort((a, b) => b.length - a.length));
+// === 智慧同義搜尋：角色-命座配對 ===
+const CHAR_GROUPS = [
+  // 原神
+  ['瑪薇卡','mavuika','稻妻','火神','瑪薇'],
+  ['芙寧娜','furina','水神','芙芙'],
+  ['雷電將軍','雷電','raiden','雷神'],
+  ['納西妲','nahida','小草神','草神'],
+  ['溫迪','venti','風神'],
+  ['鍾離','zhongli','帝君','岩神'],
+  ['夜蘭','yelan','夜天后','夜后'],
+  ['那維萊特','那維','neuvillette','龍王'],
+  ['阿蕾奇諾','arlecchino','僕人'],
+  ['優菈','eula'],
+  ['胡桃','hutao'],
+  ['甘雨','ganyu'],
+  ['刻晴','keqing'],
+  ['宵宮','yoimiya'],
+  ['心海','kokomi'],
+  ['荒瀧一鬥','itto'],
+  ['八重神子','yae'],
+  ['申鶴','shenhe'],
+  ['夜蘭','yelan'],
+  ['散兵','scaramouche','流浪者'],
+  ['妮露','nilou'],
+  ['賽諾','cyno'],
+  ['萊依拉','layla'],
+  ['林尼','lyney'],
+  ['菲謝爾','fischl'],
+  ['萬葉','kazuha'],
+  ['甘雨','ganyu'],
+  ['洽斯卡','chasca'],
+  ['梅西','mavuika'],
+  ['伊足死','ifa'],
+  ['倚龍','xianyun'],
+  ['卡維','kaveh'],
+  ['琳妮特','lynette'],
+  ['芙蘿德波','wriothesley'],
+  ['那維','neuvillette'],
+  // 崩鐵
+  ['黃泉','巡海遊俠','acheron'],
+  ['流螢','薩姆','firefly'],
+  ['砂金','總管','aventurine'],
+  ['卡芙卡','卡媽','kafka'],
+  ['花火','sparkle'],
+  ['知更鳥','robin'],
+  ['星期日','sunday'],
+  ['翡翠','jade'],
+  ['貊澤','misha'],
+  ['葛拉加','gallagher'],
+  // 絕區零
+  ['艾蓮','鯊魚','ellen'],
+  ['簡','老鼠','jane'],
+  ['星見雅','雅','miyabi'],
+  ['月城柳','柳','yanagi'],
+  ['青衣','qingyi'],
+  ['朱鳶','zhu yuan'],
+  ['盧卡','luca'],
+  // 鳴潮
+  ['守岸人','camellya'],
+  ['今汐','jinhsi'],
+  ['長離','changli'],
+  ['吟霖','yinlin'],
+].map(g => g.sort((a,b) => b.length - a.length));
+
+const LEVEL_GROUPS = [
+  // 滿命 (原神6命/崩鐵星魂/絕區零影畫/鳴潮鏈)
+  ['滿命滿精','滿命專武','滿命滿鏈','滿命滿影','6+5','6+4','6+3','6+2','6+1','6命','滿命','滿魂','滿星魂','6魂','6星魂','滿影畫','6影畫','6影','滿鏈','6鏈'],
+  // 2命
+  ['2+2','2+1','2命','2魂','2星魂','2影畫','2影','2鏈'],
+  // 1命
+  ['1+1','1命','1魂','1星魂','1影畫','1影','1鏈'],
+  // 0命
+  ['0+1','0命','零命','0魂','0星魂','0影畫','0影','0鏈'],
+  // 專武/音擎
+  ['滿精','精5','光錐','音擎','專武','1精'],
+].map(g => g.sort((a,b) => b.length - a.length));
+
+const ALL_SYN_GROUPS = [...CHAR_GROUPS, ...LEVEL_GROUPS];
+
+// 在文字 text 中找到 group 內某個詞，回傳 {word, start, end} 或 null
+function findHit(group, text) {
+  for (const word of group) {
+    const idx = text.indexOf(word.toLowerCase());
+    if (idx >= 0) return { word: word.toLowerCase(), start: idx, end: idx + word.length };
+  }
+  return null;
+}
+
+// 分析 title，回傳 Map<charWord, Set<levelWord>>
+function buildPairings(title) {
+  const pairings = new Map(); // charWord -> Set of levelWords
+  // tokenize by 空白和常見分隔符
+  const tokens = title.split(/[\s\/,、|「」【】\[\]()（）]+/).filter(t => t.length > 0);
+  let currentChar = null;
+
+  for (const token of tokens) {
+    const charHits = [];
+    for (const cg of CHAR_GROUPS) {
+      const hit = findHit(cg, token);
+      if (hit) { charHits.push({ group: cg, ...hit }); }
+    }
+    const levelHits = [];
+    for (const lg of LEVEL_GROUPS) {
+      const hit = findHit(lg, token);
+      if (hit) { levelHits.push({ group: lg, ...hit }); }
+    }
+
+    if (charHits.length > 0 && levelHits.length > 0) {
+      // 同一 token 有角色+命座 → 依距離配對
+      for (const lh of levelHits) {
+        const lMid = (lh.start + lh.end) / 2;
+        let nearest = null, nearestDist = Infinity;
+        for (const ch of charHits) {
+          const cMid = (ch.start + ch.end) / 2;
+          const dist = Math.abs(lMid - cMid);
+          if (dist < nearestDist) { nearestDist = dist; nearest = ch; }
+        }
+        if (nearest) {
+          if (!pairings.has(nearest.word)) pairings.set(nearest.word, new Set());
+          pairings.get(nearest.word).add(lh.word);
+        }
+      }
+      // 更新 currentChar 為最右側的角色
+      charHits.sort((a, b) => b.start - a.start);
+      currentChar = charHits[0].word;
+
+    } else if (charHits.length > 0) {
+      // 只有角色，更新 currentChar
+      charHits.sort((a, b) => b.start - a.start);
+      currentChar = charHits[0].word;
+
+    } else if (levelHits.length > 0 && currentChar !== null) {
+      // 只有命座 token
+      for (const lh of levelHits) {
+        // 判斷命座詞後面是否還有非空白文字 (如 滿命優菈)
+        const afterLevel = token.slice(lh.end);
+        // 若後方還有文字 → 這個命座屬於後方未知角色，不歸 currentChar
+        if (afterLevel.trim().length === 0) {
+          if (!pairings.has(currentChar)) pairings.set(currentChar, new Set());
+          pairings.get(currentChar).add(lh.word);
+        }
+        // 否則跳過 (不歸前方角色)
+      }
+    }
+  }
+  return pairings;
+}
 
 function smartMatch(title, kw) {
   title = title.toLowerCase();
   kw = kw.toLowerCase();
-  let remainingKw = kw;
-  const matchedGroups = [];
 
-  for (const group of SYN_GROUPS) {
-    let hitWord = null;
-    for (const word of group) {
-      if (remainingKw.includes(word.toLowerCase())) {
-        hitWord = word.toLowerCase();
-        break;
-      }
-    }
-    if (hitWord !== null) {
-      matchedGroups.push(group);
-      remainingKw = remainingKw.replace(hitWord, '');
-    }
+  let rem = kw;
+  const searchedCharGroups = [];
+  const searchedLevelGroups = [];
+
+  for (const g of CHAR_GROUPS) {
+    const hit = findHit(g, rem);
+    if (hit) { searchedCharGroups.push(g); rem = rem.slice(0, hit.start) + rem.slice(hit.end); }
+  }
+  for (const g of LEVEL_GROUPS) {
+    const hit = findHit(g, rem);
+    if (hit) { searchedLevelGroups.push(g); rem = rem.slice(0, hit.start) + rem.slice(hit.end); }
   }
 
-  for (const group of matchedGroups) {
-    let groupHit = false;
-    for (const word of group) {
-      if (title.includes(word.toLowerCase())) { groupHit = true; break; }
-    }
-    if (!groupHit) return false;
-  }
-
-  const leftover = remainingKw.trim().split(/\s+/).filter(x => x);
+  // 剩餘非同義詞部分仍需直接比對
+  const leftover = rem.trim().split(/\s+/).filter(x => x);
   for (const part of leftover) {
     if (!title.includes(part)) return false;
+  }
+
+  // 只搜一種 (只角色 或 只命座) → 各自存在即可
+  if (searchedCharGroups.length === 0 || searchedLevelGroups.length === 0) {
+    for (const g of [...searchedCharGroups, ...searchedLevelGroups]) {
+      if (!g.some(w => title.includes(w.toLowerCase()))) return false;
+    }
+    return true;
+  }
+
+  // 角色+命座同時搜 → 需要配對
+  const pairings = buildPairings(title);
+
+  for (const cg of searchedCharGroups) {
+    for (const lg of searchedLevelGroups) {
+      let matched = false;
+      for (const [charWord, levelSet] of pairings) {
+        if (cg.some(w => charWord === w.toLowerCase())) {
+          for (const lw of levelSet) {
+            if (lg.some(w => lw === w.toLowerCase())) { matched = true; break; }
+          }
+        }
+        if (matched) break;
+      }
+      if (!matched) return false;
+    }
   }
   return true;
 }
