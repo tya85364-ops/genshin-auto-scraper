@@ -368,6 +368,14 @@ function renderChart(items) {
     <input id="keyword" type="text" placeholder="角色名稱、配置關鍵字..." autocomplete="off">
   </div>
   <div class="filter-row">
+    <label>金數</label>
+    <div class="price-row">
+      <input id="goldChar" type="number" placeholder="金角" inputmode="numeric">
+      <span class="sep">/</span>
+      <input id="goldWeap" type="number" placeholder="金武" inputmode="numeric">
+    </div>
+  </div>
+  <div class="filter-row">
     <label>預算</label>
     <div class="price-row">
       <input id="minPrice" type="number" placeholder="最低" inputmode="numeric">
@@ -425,8 +433,8 @@ const API_BASE = 'https://genshin-auto-scraper-production.up.railway.app';
 let customTargets = {};
 
 const COLS = {
-  in_progress: { date:0, title:2, price:3, gold:4, cp1:6, seller:12, url:13 },
-  completed:   { date:0, title:3, price:4, gold:5, cp1:9, seller:12, url:13 }
+  in_progress: { date:0, title:2, price:3, gold:4, goldWeap:5, cp1:6, seller:12, url:13 },
+  completed:   { date:0, title:3, price:4, gold:5, goldWeap:6, cp1:9, seller:12, url:13 }
 };
 
 let currentSheet = '崩鐵';
@@ -843,6 +851,8 @@ function applyFilter() {
   const pMin    = parseFloat(document.getElementById('minPrice').value) || 0;
   const pMax    = parseFloat(document.getElementById('maxPrice').value) || 999999;
   const cpMax   = parseFloat(document.getElementById('maxCp').value)   || 999;
+  const targetGoldChar = document.getElementById('goldChar').value;
+  const targetGoldWeap = document.getElementById('goldWeap').value;
   const df      = document.getElementById('dateFilter').value;
   const dFrom   = document.getElementById('dateFrom').value;
   const dTo     = document.getElementById('dateTo').value;
@@ -857,9 +867,22 @@ function applyFilter() {
     const cp1S   = g(c.cp1).replace(/,/g,'');
     const price  = parseFloat(priceS) || 0;
     const cp1    = parseFloat(cp1S)   || 999;
+    const goldChar = parseInt(g(c.gold)) || 0;
+    const goldWeap = parseInt(g(c.goldWeap)) || 0;
 
     if (price === 0) continue;
     if (price < pMin || price > pMax) continue;
+    
+    // 金角/金武 +-10 過濾
+    if (targetGoldChar !== '') {
+        const tgtChar = parseInt(targetGoldChar);
+        if (Math.abs(goldChar - tgtChar) > 10) continue;
+    }
+    if (targetGoldWeap !== '') {
+        const tgtWeap = parseInt(targetGoldWeap);
+        if (Math.abs(goldWeap - tgtWeap) > 10) continue;
+    }
+
     if (kw && !smartMatch(title.toLowerCase(), kw)) continue;
     if (cpMax < 999 && cp1 > cpMax) continue;
 
@@ -880,6 +903,7 @@ function applyFilter() {
     matched.push({
       title, price, cp1,
       gold:   g(c.gold),
+      goldWeap: g(c.goldWeap),
       seller: g(c.seller),
       url:    g(c.url),
       date:   g(c.date).slice(0,10)
@@ -944,7 +968,7 @@ function renderResults(items, isFavoritesMode = false) {
       </div>
       <div class="card-title">${escHtml(r.title || '（無標題）')}</div>
       <div class="card-meta">
-        ${r.gold ? `<span class="badge badge-gold">⭐ ${r.gold} 金角</span>` : ''}
+        ${r.gold ? `<span class="badge badge-gold">⭐ ${r.gold} 金角 ${r.goldWeap ? '/ '+r.goldWeap+' 金武' : ''}</span>` : ''}
         ${r.date ? `<span class="badge badge-date">📅 ${r.date}</span>` : ''}
         ${sellerHtml}
       </div>
@@ -1097,7 +1121,7 @@ async function downloadGeminiDatabase(btn) {
 
 // Live filter on typing (debounced)
 let debTimer;
-['keyword','minPrice','maxPrice','maxCp','dateFilter','dateFrom','dateTo'].forEach(id => {
+['keyword','minPrice','maxPrice','maxCp','dateFilter','dateFrom','dateTo', 'goldChar', 'goldWeap'].forEach(id => {
   document.getElementById(id).addEventListener('input', () => {
     if (!rawRows.length) return;
     clearTimeout(debTimer);
