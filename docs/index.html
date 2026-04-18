@@ -186,19 +186,21 @@
   .badge-seller { background: rgba(136,136,170,0.12); color: var(--muted); border: 1px solid var(--border); }
   .badge-seller.clickable { cursor: pointer; color: var(--accent2); background: rgba(0,212,255,0.08); border-color: rgba(0,212,255,0.2); }
 
-  /* Fav toggle */
+  /* Fav toggle & Copy toggle */
   .fav-btn {
     position: absolute; right: 8px; bottom: 8px;
-    font-size: 28px; color: rgba(255, 255, 255, 0.6);
+    font-size: 20px; color: rgba(255, 255, 255, 0.6);
     cursor: pointer;
     background: #1A1A2E; 
     border: 2px solid rgba(255, 255, 255, 0.2);
-    border-radius: 50%; width: 52px; height: 52px;
+    border-radius: 50%; width: 44px; height: 44px;
     display: flex; align-items: center; justify-content: center;
     transition: all 0.2s; z-index: 5;
     -webkit-tap-highlight-color: transparent;
     box-shadow: 0 4px 12px rgba(0,0,0,0.5);
   }
+  .copy-btn { right: 58px; font-size:16px; }
+  .notify-btn { right: 108px; }
   .fav-btn.active { 
     color: var(--gold); 
     background: rgba(255,215,0,0.2);
@@ -206,6 +208,7 @@
     text-shadow: 0 0 15px rgba(255,215,0,0.8); 
     transform: scale(1.1); 
   }
+  .fav-btn:active { transform: scale(0.9); }
 
   /* Empty state */
   .empty {
@@ -240,136 +243,7 @@
   .btn-cancel { background: transparent; color: var(--muted); border: 1px solid var(--border); }
   .btn-save { background: var(--accent); color: #fff; }
 </style>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js">
-let chartObj = null;
-let showingChart = false;
-
-function toggleChart() {
-  showingChart = !showingChart;
-  document.getElementById('resultsInner').style.display = showingChart ? 'none' : 'flex';
-  document.getElementById('chartView').style.display = showingChart ? 'block' : 'none';
-  if (showingChart) {
-    renderChart(lastMatchedItems || []);
-  }
-}
-
-let lastMatchedItems = [];
-
-// Override applyFilter to hook lastMatchedItems
-const originalApplyFilter = applyFilter;
-applyFilter = function() {
-  // Execute the original logic... wait, applyFilter doesn't return anything.
-  // Instead, hook renderResults!
-}
-
-// Intercept renderResults
-const originalRenderResults = renderResults;
-renderResults = function(items, isFavoritesMode = false) {
-  lastMatchedItems = items;
-  originalRenderResults(items, isFavoritesMode);
-  if (showingChart) {
-    renderChart(items, historyMatchedItems || []);
-  }
-};
-
-function renderChart(items, histItems) {
-  if ((!items || items.length === 0) && (!histItems || histItems.length === 0)) return;
-  const ctx = document.getElementById('trendChart').getContext('2d');
-  
-  // Group current by date
-  const groups = {};
-  items.forEach(it => {
-    if (!it.date) return;
-    const dStr = it.date.slice(0, 10);
-    if (!groups[dStr]) groups[dStr] = { sumPrice: 0, sumCp: 0, count: 0 };
-    groups[dStr].sumPrice += it.price;
-    groups[dStr].sumCp += it.cp1;
-    groups[dStr].count++;
-  });
-
-  // Group history by date (min price band)
-  const histLow = {};
-  if (histItems && histItems.length > 0) {
-      histItems.forEach(it => {
-          if (!it.date) return;
-          const dStr = it.date.slice(0, 10);
-          if (!histLow[dStr]) histLow[dStr] = { minPrice: 999999 };
-          if (it.price && it.price < histLow[dStr].minPrice) histLow[dStr].minPrice = it.price;
-      });
-  }
-  
-  const dates = [...new Set([...Object.keys(groups), ...Object.keys(histLow)])].sort();
-  
-  const avgPrices = dates.map(d => groups[d] ? groups[d].sumPrice / groups[d].count : null);
-  const avgCps = dates.map(d => groups[d] ? groups[d].sumCp / groups[d].count : null);
-  const historicMins = dates.map(d => {
-      if(histLow[d] && histLow[d].minPrice < 999999) return histLow[d].minPrice;
-      return null;
-  });
-  
-  if (chartObj) chartObj.destroy();
-  Chart.defaults.color = '#E8E8F0';
-  Chart.defaults.font.family = "-apple-system, 'Noto Sans TC', sans-serif";
-  
-  chartObj = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: dates,
-      datasets: [
-        {
-          label: '歷史觸底價範圍帶',
-          data: historicMins,
-          borderColor: 'rgba(136, 136, 170, 0.4)',
-          backgroundColor: 'rgba(136, 136, 170, 0.25)',
-          yAxisID: 'y',
-          fill: true,
-          tension: 0.3,
-          spanGaps: true,
-          pointRadius: 2
-        },
-        {
-          label: '在架均價',
-          data: avgPrices,
-          borderColor: '#00E676',
-          backgroundColor: 'transparent',
-          yAxisID: 'y',
-          tension: 0.3,
-          spanGaps: true,
-          borderWidth: 3
-        },
-        {
-          label: '平均 CP',
-          data: avgCps,
-          borderColor: '#6C63FF',
-          backgroundColor: 'transparent',
-          yAxisID: 'y1',
-          tension: 0.3,
-          borderDash: [5, 5],
-          spanGaps: true
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      interaction: { mode: 'index', intersect: false },
-      scales: {
-        x: { grid: { color: '#2A2A4A' } },
-        y: { 
-          type: 'linear', display: true, position: 'left',
-          grid: { color: '#2A2A4A' },
-          title: { display: true, text: '價格 ($)'} 
-        },
-        y1: {
-          type: 'linear', display: true, position: 'right',
-          grid: { drawOnChartArea: false },
-          title: { display: true, text: 'CP 值'} 
-        }
-      }
-    }
-  });
-}
-
-</script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -402,8 +276,23 @@ function renderChart(items, histItems) {
 
 <div class="filters">
   <div class="filter-row">
-    <label>關鍵字</label>
+    <label>正向包含</label>
     <input id="keyword" type="text" placeholder="角色名稱、配置關鍵字..." autocomplete="off">
+  </div>
+  <div class="filter-row">
+    <label>負向排除</label>
+    <input id="negativeKeyword" type="text" placeholder="例如: 初始,自選,代練,徵..." autocomplete="off" value="初始,自選,代練,徵">
+  </div>
+  <div class="filter-row" style="flex-wrap: wrap; gap: 6px; padding: 4px 0;">
+    <button class="badge badge-gold" onclick="setMetaFilter('月綻放', '')">月綻放</button>
+    <button class="badge badge-gold" onclick="setMetaFilter('月感電', '')">月感電</button>
+    <button class="badge badge-gold" onclick="setMetaFilter('月結晶', '')">月結晶</button>
+    <button class="badge badge-gold" onclick="setMetaFilter('火神', '')">火神隊</button>
+    <button class="badge badge-gold" onclick="setMetaFilter('絲柯克', '')">絲柯克(水冰)</button>
+    <button class="badge badge-gold" onclick="setMetaFilter('擊破', '')">擊破 (崩鐵)</button>
+    <button class="badge badge-gold" onclick="setMetaFilter('記憶', '')">記憶 (崩鐵)</button>
+    <button class="badge badge-gold" onclick="setMetaFilter('白厄', '')">白厄 (崩鐵)</button>
+    <button class="badge badge-gold" onclick="setMetaFilter('歡愉', '')">歡愉 (崩鐵)</button>
   </div>
   <div class="filter-row">
     <label>金數</label>
@@ -458,8 +347,13 @@ function renderChart(items, histItems) {
     </div>
   </div>
 
-  <div class="results-inner" id="chartView" style="display:none;">
+  <div class="results-inner" id="chartView" style="display:none; flex-direction:column; gap:10px;">
     <div class="card" style="padding: 20px 10px;">
+        <h4 style="text-align:center;margin-bottom:10px;color:var(--text);">價格 vs 金數 (散佈圖)</h4>
+        <canvas id="scatterChart" style="max-height: 250px;"></canvas>
+    </div>
+    <div class="card" style="padding: 20px 10px;">
+        <h4 style="text-align:center;margin-bottom:10px;color:var(--text);">歷來成交趨勢帶</h4>
         <canvas id="trendChart"></canvas>
     </div>
   </div>
@@ -953,9 +847,28 @@ function smartMatch(title, kw) {
   return true;
 }
 
+function setMetaFilter(pos, neg) {
+    document.getElementById('keyword').value = pos || '';
+    if(neg !== undefined) {
+        document.getElementById('negativeKeyword').value = neg;
+    }
+    applyFilter();
+}
+
+function copyValuationPrompt(e, title, price, goldStr) {
+    e.preventDefault(); e.stopPropagation();
+    let promptText = `我看到一個 8591 帳號，標題是：[${title}]，金數：[${goldStr}]，目前開價：$${price}。請幫我分析這個帳號的轉手價值及溢價空間。`;
+    navigator.clipboard.writeText(promptText).then(() => {
+        alert("📋 已複製分析 Prompt 到剪貼簿！\n\n" + promptText);
+    }).catch(err => {
+        prompt("複製失敗，請手動複製以下 Prompt:", promptText);
+    });
+}
+
 function applyFilter() {
   if (currentSheet === 'favorites') return;
   const kw      = document.getElementById('keyword').value.trim().toLowerCase();
+  const nkw     = (document.getElementById('negativeKeyword')?.value || '').trim().toLowerCase();
   const pMin    = parseFloat(document.getElementById('minPrice').value) || 0;
   const pMax    = parseFloat(document.getElementById('maxPrice').value) || 999999;
   const cpMax   = parseFloat(document.getElementById('maxCp').value)   || 999;
@@ -1014,6 +927,11 @@ function applyFilter() {
               if (Math.abs(goldWeap - tgtWeap) > 10) continue;
           }
           if (kw && !smartMatch(title.toLowerCase(), kw)) continue;
+          
+          if (nkw) {
+              const negWords = nkw.split(',').map(w => w.trim()).filter(w => w);
+              if (negWords.some(nw => title.toLowerCase().includes(nw))) continue;
+          }
       }
       
       // -- Client-side Weight Overrider Logic --
@@ -1099,12 +1017,42 @@ function renderResults(items, isFavoritesMode = false) {
   const favs = getFavorites();
 
 
+  let avgCp = 100;
+  if(items.length > 0) {
+      let cpSum = 0, pc = 0;
+      items.forEach(i => { if(i.cp1 > 0 && i.cp1 < 2000) { cpSum += i.cp1; pc++; } });
+      if(pc > 0) avgCp = cpSum / pc;
+  }
+
   const renderCards = (list) => list.map(r => {
     const href = r.url || '#';
     const cpDisplay = r.cp1 < 900 ? `CP ${r.cp1.toFixed(2)}${r.clientScoreApplied ? ' ⚙️' : ''}` : '—';
     const isFav = !!favs[r.url];
     const isTargeted = !!customTargets[r.url];
     const dataStr = encodeURIComponent(JSON.stringify(r));
+    
+    let heatStyle = "";
+    if (r.cp1 > 0 && avgCp > 0) {
+        if (r.cp1 < avgCp * 0.70) heatStyle = "border-color: #00E676; box-shadow: 0 0 16px rgba(0,230,118,0.25); background: linear-gradient(180deg, rgba(0,230,118,0.08) 0%, rgba(22,33,62,1) 40%);";
+        else if (r.cp1 > avgCp * 1.4) heatStyle = "border-color: rgba(255,107,107,0.5);";
+    }
+
+    let favNoteHtml = '';
+    if (isFav && currentSheet === 'favorites') {
+        const savedPrice = favs[r.url]?.price || 0;
+        let livePrice = savedPrice;
+        if (rawRows && rawRows.length > 0) {
+            const liveRow = rawRows.find(raw => raw[13] === r.url || raw[COLS.in_progress?.url] === r.url);
+            if (liveRow) livePrice = parseFloat((liveRow[3] || liveRow[COLS.in_progress?.price] || '0').replace(/[$,]/g,''));
+        }
+        if (livePrice > 0 && livePrice < savedPrice) {
+            favNoteHtml = `<div style="font-size:12px; color:#00E676; margin-bottom: 6px; font-weight:bold;">📉 已降價 (目前$${livePrice.toLocaleString()})</div>`;
+        }
+        const isSold = historyRows && historyRows.some(hr => hr[13] === r.url || hr[COLS.completed?.url] === r.url);
+        if (isSold) {
+            favNoteHtml = `<div style="font-size:12px; color:#00D4FF; margin-bottom: 6px; font-weight:bold;">💰 此帳號已售出/下架</div>`;
+        }
+    }
     
     let sellerHtml = '';
     if (r.seller) {
@@ -1121,8 +1069,10 @@ function renderResults(items, isFavoritesMode = false) {
       }
     }
 
-    return `<a class="card" href="${href}" target="_blank" rel="noopener">
-      <button class="fav-btn ${isTargeted ? 'active' : ''}" style="right: 68px; font-size:20px; color:${isTargeted ? '#00E676' : 'rgba(255,255,255,0.6)'}; border-color:${isTargeted ? '#00E676' : 'rgba(255,255,255,0.2)'}; text-shadow:${isTargeted ? '0 0 10px #00E676' : 'none'};" onclick="promptTarget(event, '${r.url}', '${escHtml(r.title).replace(/'/g, "\\'")}')">🔔</button>
+    return `<a class="card" href="${href}" target="_blank" rel="noopener" style="${heatStyle}">
+      ${favNoteHtml}
+      <button class="fav-btn notify-btn ${isTargeted ? 'active' : ''}" style="color:${isTargeted ? '#00E676' : 'rgba(255,255,255,0.6)'}; border-color:${isTargeted ? '#00E676' : 'rgba(255,255,255,0.2)'}; text-shadow:${isTargeted ? '0 0 10px #00E676' : 'none'};" onclick="promptTarget(event, '${r.url}', '${escHtml(r.title).replace(/'/g, "\\'")}')">🔔</button>
+      <button class="fav-btn copy-btn" onclick="copyValuationPrompt(event, '${escHtml(r.title).replace(/'/g, "\\'")}', ${r.price}, '${r.gold||0}金${r.goldWeap||0}武', '${r.gameName||currentSheet.split('-')[0]}')">📋</button>
       <button class="fav-btn ${isFav ? 'active' : ''}" onclick="toggleFav(event, '${r.url}', '${dataStr}')">${isFav ? '★' : '☆'}</button>
       <div class="card-top">
         <div class="card-price">$${r.price.toLocaleString()}</div>
@@ -1312,6 +1262,7 @@ document.getElementById('keyword').addEventListener('keydown', e => {
 });
 
 let chartObj = null;
+let scatterObj = null;
 let showingChart = false;
 
 function toggleChart() {
@@ -1319,13 +1270,15 @@ function toggleChart() {
   document.getElementById('resultsInner').style.display = showingChart ? 'none' : 'flex';
   document.getElementById('chartView').style.display = showingChart ? 'block' : 'none';
   if (showingChart) {
-    renderChart(lastMatchedItems || []);
+    if (typeof Chart === 'undefined') {
+        alert("Chart.js 尚未加載，請稍等片刻再試。");
+        return;
+    }
+    renderChart(lastMatchedItems || [], historyMatchedItems || []);
   }
 }
 
 let lastMatchedItems = [];
-
-
 
 // Intercept renderResults
 const originalRenderResults = renderResults;
@@ -1333,12 +1286,65 @@ renderResults = function(items, isFavoritesMode = false) {
   lastMatchedItems = items;
   originalRenderResults(items, isFavoritesMode);
   if (showingChart) {
-    renderChart(items, historyMatchedItems || []);
+    if (typeof Chart !== 'undefined') {
+        renderChart(items, historyMatchedItems || []);
+    }
   }
 };
 
 function renderChart(items, histItems) {
   if ((!items || items.length === 0) && (!histItems || histItems.length === 0)) return;
+  
+  // 1. Render Scatter
+  const scatterCtx = document.getElementById('scatterChart');
+  if (scatterCtx) {
+      if (scatterObj) scatterObj.destroy();
+      const scatterData = items.filter(it => it.price > 0 && it.gold > 0).map(it => ({
+          x: parseInt(it.gold) || 0,
+          y: parseFloat(it.price) || 0,
+          rawItem: it
+      }));
+      scatterObj = new Chart(scatterCtx.getContext('2d'), {
+          type: 'scatter',
+          data: {
+              datasets: [{
+                  label: '市場定價分佈',
+                  data: scatterData,
+                  backgroundColor: 'rgba(0, 212, 255, 0.6)',
+                  borderColor: '#00D4FF',
+                  pointRadius: 5,
+                  pointHoverRadius: 8
+              }]
+          },
+          options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              onClick: (e, elements) => {
+                  if (elements.length > 0) {
+                      const idx = elements[0].index;
+                      const item = scatterData[idx].rawItem;
+                      window.open(item.url, '_blank');
+                  }
+              },
+              plugins: {
+                  tooltip: {
+                      callbacks: {
+                          label: function(ctx) {
+                              const it = ctx.raw.rawItem;
+                              return `${it.gold}金 | $${it.price} | ${it.title.substring(0,25)}...`;
+                          }
+                      }
+                  }
+              },
+              scales: {
+                  x: { type: 'linear', position: 'bottom', title: { display: true, text: '總金數' } },
+                  y: { title: { display: true, text: '價格 ($)' } }
+              }
+          }
+      });
+  }
+
+  // 2. Render Trend Chart
   const ctx = document.getElementById('trendChart').getContext('2d');
   
   // Group current by date

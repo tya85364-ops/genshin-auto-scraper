@@ -1,4 +1,4 @@
-const CACHE = 'radar-v2';
+const CACHE = 'radar-v3';
 self.addEventListener('install', e => e.waitUntil(
   caches.open(CACHE).then(c => c.addAll(['./']))
 ));
