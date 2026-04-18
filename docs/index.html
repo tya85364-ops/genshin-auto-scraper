@@ -395,6 +395,7 @@ function renderChart(items, histItems) {
     <div class="tab" data-sheet="鳴潮-成交紀錄" data-type="completed">鳴潮成交</div>
     <div class="tab" data-sheet="絕區零" data-type="in_progress">絕區零在架</div>
     <div class="tab" data-sheet="絕區零-成交紀錄" data-type="completed">絕區零成交</div>
+        <div class="tab" data-sheet="seller" data-type="seller" style="border-color: #00D4FF; color: #00D4FF;">🕵️ 賣家查水表</div>
     <div class="tab" data-sheet="favorites" data-type="favorites" style="border-color: var(--gold); color: var(--gold);">⭐️ 追蹤清單</div>
   </div>
 </header>
@@ -596,8 +597,18 @@ document.querySelectorAll('.tab').forEach(tab => {
     if (currentSheet === 'favorites') {
       document.querySelector('.filters').style.display = 'none';
       doSearch();
+    } else if (currentSheet === 'seller') {
+      document.querySelector('.filters').style.display = 'flex';
+      document.querySelectorAll('.filter-row').forEach((row, idx) => {
+         row.style.display = idx === 0 ? 'flex' : 'none';
+      });
+      document.getElementById('keyword').placeholder = "請輸入賣家 ID 或名稱...";
+      setStatus('請輸入賣家資訊後點擊查詢');
     } else {
       document.querySelector('.filters').style.display = 'flex';
+      document.querySelectorAll('.filter-row').forEach(row => row.style.display = 'flex');
+      document.getElementById('customDateRow').style.display = document.getElementById('dateFilter').value === 'custom' ? 'flex' : 'none';
+      document.getElementById('keyword').placeholder = "角色名稱、配置關鍵字...";
       setStatus('選好工作表了，點「拉取 & 搜尋」開始查詢');
     }
   });
@@ -647,8 +658,45 @@ async function doSearch() {
 
   const btn = document.getElementById('searchBtn');
   if (btn) btn.disabled = true;
-  setStatus('連線 Google Sheets 中…', true);
 
+  if (currentSheet === 'seller') {
+     setStatus('連線全網 Google Sheets 中 (共 8 份)…', true);
+     const sheets = ['原神', '崩鐵', '鳴潮', '絕區零'];
+     const p = [];
+     sheets.forEach(s => {
+       p.push(fetch(csvUrl(s)).then(r => r.text()).then(t => ({ game: s, type: 'in_progress', text: t })));
+       p.push(fetch(csvUrl(`${s}-成交紀錄`)).then(r => r.text()).then(t => ({ game: s, type: 'completed', text: t })));
+     });
+     try {
+       const results = await Promise.all(p);
+       rawRows = [];
+       historyRows = [];
+       results.forEach(res => {
+          let rows = parseCSV(res.text);
+          rows.forEach(r => {
+             r.push(res.game);
+             r.push(res.type);
+          });
+          if (res.type === 'in_progress') {
+             rawRows.push(...rows);
+          } else {
+             historyRows.push(...rows);
+          }
+       });
+       await fetchTargets();
+       applyFilter();
+     } catch(e) {
+       setStatus('❌ 讀取失敗：' + e.message);
+     } finally {
+       if (btn) btn.disabled = false;
+       const sp = document.getElementById('spinner');
+       if (sp) sp.classList.remove('show');
+     }
+     return;
+  }
+
+
+  setStatus('連線 Google Sheets 中…', true);
   try {
     const isCompleted = currentSheet.includes('成交紀錄');
     const histSheet = isCompleted ? currentSheet : currentSheet + '-成交紀錄';
@@ -928,11 +976,20 @@ function applyFilter() {
       }
   });
 
-  const doFilter = (rows, cCols) => {
+  const doFilter = (rows, defaultCols) => {
     const arr = [];
     for (const row of rows) {
+      let cCols = defaultCols;
+      let gameName = null;
+      if (currentSheet === 'seller' && row.length >= 14) {
+          const typeName = row[row.length - 1]; // We pushed type and game
+          gameName = row[row.length - 2];
+          cCols = COLS[typeName];
+      }
+
       const g = i => row[i] || '';
       const title  = g(cCols.title);
+      const sellerStr = g(cCols.seller);
       const priceS = g(cCols.price).replace(/[$,]/g,'');
       const cp1S   = g(cCols.cp1).replace(/,/g,'');
       const price  = parseFloat(priceS) || 0;
@@ -941,18 +998,23 @@ function applyFilter() {
       const goldWeap = parseInt(g(cCols.goldWeap)) || 0;
 
       if (price === 0) continue;
-      if (price < pMin || price > pMax) continue;
-      
-      if (targetGoldChar !== '') {
-          const tgtChar = parseInt(targetGoldChar);
-          if (Math.abs(goldChar - tgtChar) > 10) continue;
-      }
-      if (targetGoldWeap !== '') {
-          const tgtWeap = parseInt(targetGoldWeap);
-          if (Math.abs(goldWeap - tgtWeap) > 10) continue;
-      }
 
-      if (kw && !smartMatch(title.toLowerCase(), kw)) continue;
+      if (currentSheet === 'seller') {
+          if (!kw) continue; // must provide keyword
+          let sRaw = (sellerStr || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+          if (!(sellerStr || '').toLowerCase().includes(kw) && !sRaw.includes(kw)) continue;
+      } else {
+          if (price < pMin || price > pMax) continue;
+          if (targetGoldChar !== '') {
+              const tgtChar = parseInt(targetGoldChar);
+              if (Math.abs(goldChar - tgtChar) > 10) continue;
+          }
+          if (targetGoldWeap !== '') {
+              const tgtWeap = parseInt(targetGoldWeap);
+              if (Math.abs(goldWeap - tgtWeap) > 10) continue;
+          }
+          if (kw && !smartMatch(title.toLowerCase(), kw)) continue;
+      }
       
       // -- Client-side Weight Overrider Logic --
       let clientScoreApplied = false;
@@ -987,7 +1049,7 @@ function applyFilter() {
       }
 
       arr.push({
-        title, price, cp1, clientScoreApplied,
+        title, price, cp1, clientScoreApplied, gameName,
         gold:   g(cCols.gold),
         goldWeap: g(cCols.goldWeap),
         seller: g(cCols.seller),
@@ -1036,7 +1098,8 @@ function renderResults(items, isFavoritesMode = false) {
 
   const favs = getFavorites();
 
-  const cards = items.map(r => {
+
+  const renderCards = (list) => list.map(r => {
     const href = r.url || '#';
     const cpDisplay = r.cp1 < 900 ? `CP ${r.cp1.toFixed(2)}${r.clientScoreApplied ? ' ⚙️' : ''}` : '—';
     const isFav = !!favs[r.url];
@@ -1067,6 +1130,7 @@ function renderResults(items, isFavoritesMode = false) {
       </div>
       <div class="card-title">${escHtml(r.title || '（無標題）')}</div>
       <div class="card-meta">
+        ${r.gameName ? `<span class="badge" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.3); color:#fff">🎮 ${r.gameName}</span>` : ''}
         ${r.gold ? `<span class="badge badge-gold">⭐ ${r.gold} 金角 ${r.goldWeap ? '/ '+r.goldWeap+' 金武' : ''}</span>` : ''}
         ${r.date ? `<span class="badge badge-date">📅 ${r.date}</span>` : ''}
         ${sellerHtml}
@@ -1074,7 +1138,23 @@ function renderResults(items, isFavoritesMode = false) {
     </a>`;
   }).join('');
 
-  el.innerHTML = sortBar + cards;
+  if (currentSheet === 'seller') {
+      el.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding:0 4px;">
+            <h3 style="color:#00E676; font-size:16px;">🟢 全網在架庫存 (${items.length} 筆)</h3>
+            <span style="font-size:12px; color:var(--muted)">依 ${sortBy==='cp'?'CP':sortBy==='price'?'價格':'時間'} 排序</span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px; margin-bottom: 30px; margin-top: 10px;">
+           ${items.length ? renderCards(items) : '<div class="empty" style="padding:20px;"><div class="empty-sub">目前無上架商品</div></div>'}
+        </div>
+        <h3 style="margin-top:10px; color:#FF6B6B; font-size:16px; padding:0 4px;">🔴 全網歷史成交 (${historyMatchedItems.length} 筆)</h3>
+        <div style="display:flex; flex-direction:column; gap:10px; margin-top: 10px;">
+           ${historyMatchedItems.length ? renderCards(historyMatchedItems) : '<div class="empty" style="padding:20px;"><div class="empty-sub">無成交紀錄</div></div>'}
+        </div>
+      `;
+  } else {
+      el.innerHTML = sortBar + renderCards(items);
+  }
 }
 
 function setSort(s) {
