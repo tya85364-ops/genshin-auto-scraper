@@ -224,44 +224,70 @@ def __migrate_seen_map(seen_map):
     return seen_map
 
 def load_listing_seen(filepath):
-    db = get_mongo_db()
+    db = None
+    try:
+        db = get_mongo_db()
+    except Exception as e:
+        print(f"[Mongo] get_mongo_db 失敗，將使用本地備份: {e}")
+    
     if db is not None:
-        doc = db["listing_seen"].find_one({"_id": _mongo_key(filepath)})
-        if doc:
-            seen_map = doc.get("seen_map", {})
-            for url in doc.get("urls", []):
+        try:
+            doc = db["listing_seen"].find_one({"_id": _mongo_key(filepath)})
+            if doc:
+                seen_map = doc.get("seen_map", {})
+                for url in doc.get("urls", []):
+                    if url not in seen_map:
+                        seen_map[url] = {"date": ""}
+                return __migrate_seen_map(seen_map)
+            return {}
+        except Exception as e:
+            print(f"[Mongo] 讀取 listing_seen 失敗，改用本地備份: {e}")
+            
+    if os.path.exists(filepath):
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            urls = data.get("urls", [])
+            seen_map = data.get("seen_map", {})
+            for url in urls:
                 if url not in seen_map:
                     seen_map[url] = {"date": ""}
             return __migrate_seen_map(seen_map)
-        return {}
-    if os.path.exists(filepath):
-        with open(filepath, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        urls = data.get("urls", [])
-        seen_map = data.get("seen_map", {})
-        for url in urls:
-            if url not in seen_map:
-                seen_map[url] = {"date": ""}
-        return __migrate_seen_map(seen_map)
+        except Exception as ex:
+            print(f"[Fallback] 讀取本地 listing_seen 失敗: {ex}")
     return {}
 
 def save_listing_seen(filepath, seen_map):
-    db = get_mongo_db()
+    db = None
+    try:
+        db = get_mongo_db()
+    except Exception as e:
+        print(f"[Mongo] get_mongo_db 失敗，將使用本地備份: {e}")
+        
+    success = False
     if db is not None:
-        db["listing_seen"].replace_one(
-            {"_id": _mongo_key(filepath)},
-            {"_id": _mongo_key(filepath),
-             "seen_map": seen_map,
-             "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M")},
-            upsert=True
-        )
-    else:
-        with open(filepath, "w", encoding="utf-8") as f:
-            json.dump({
-                "urls": list(seen_map.keys()),
-                "seen_map": seen_map,
-                "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M")
-            }, f, ensure_ascii=False, indent=2)
+        try:
+            db["listing_seen"].replace_one(
+                {"_id": _mongo_key(filepath)},
+                {"_id": _mongo_key(filepath),
+                 "seen_map": seen_map,
+                 "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M")},
+                upsert=True
+            )
+            success = True
+        except Exception as e:
+            print(f"[Mongo] 寫入 listing_seen 失敗，將寫入本地: {e}")
+            
+    if not success:
+        try:
+            with open(filepath, "w", encoding="utf-8") as f:
+                json.dump({
+                    "urls": list(seen_map.keys()),
+                    "seen_map": seen_map,
+                    "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M")
+                }, f, ensure_ascii=False, indent=2)
+        except Exception as ex:
+            print(f"[Fallback] 寫入本地 listing_seen 失敗: {ex}")
 
 def calc_days_on_market(post_time_str, seen_map, url, seller_id="", title="", is_big_seller=False):
     """
@@ -685,27 +711,53 @@ def update_gsheet_completed(ws, new_trades, sellers, seen_map, high_tier_chars):
 # ===================== 降價追蹤 =====================
 
 def load_price_tracker():
-    db = get_mongo_db()
+    db = None
+    try:
+        db = get_mongo_db()
+    except Exception as e:
+        print(f"[Mongo] get_mongo_db 失敗，將使用本地備份: {e}")
+        
     if db is not None:
-        doc = db["price_tracker"].find_one({"_id": "price_tracker"})
-        return doc.get("data", {}) if doc else {}
+        try:
+            doc = db["price_tracker"].find_one({"_id": "price_tracker"})
+            return doc.get("data", {}) if doc else {}
+        except Exception as e:
+            print(f"[Mongo] 讀取 price_tracker 失敗，改用本地備份: {e}")
+            
     if os.path.exists(PRICE_TRACKER_FILE):
-        with open(PRICE_TRACKER_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
+        try:
+            with open(PRICE_TRACKER_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as ex:
+            print(f"[Fallback] 讀取本地 price_tracker 失敗: {ex}")
     return {}
 
 def save_price_tracker(tracker):
-    db = get_mongo_db()
+    db = None
+    try:
+        db = get_mongo_db()
+    except Exception as e:
+        print(f"[Mongo] get_mongo_db 失敗，將使用本地備份: {e}")
+        
+    success = False
     if db is not None:
-        db["price_tracker"].replace_one(
-            {"_id": "price_tracker"},
-            {"_id": "price_tracker", "data": tracker,
-             "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M")},
-            upsert=True
-        )
-    else:
-        with open(PRICE_TRACKER_FILE, "w", encoding="utf-8") as f:
-            json.dump(tracker, f, ensure_ascii=False, indent=2)
+        try:
+            db["price_tracker"].replace_one(
+                {"_id": "price_tracker"},
+                {"_id": "price_tracker", "data": tracker,
+                 "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M")},
+                upsert=True
+            )
+            success = True
+        except Exception as e:
+            print(f"[Mongo] 寫入 price_tracker 失敗，將寫入本地: {e}")
+            
+    if not success:
+        try:
+            with open(PRICE_TRACKER_FILE, "w", encoding="utf-8") as f:
+                json.dump(tracker, f, ensure_ascii=False, indent=2)
+        except Exception as ex:
+            print(f"[Fallback] 寫入本地 price_tracker 失敗: {ex}")
 
 # ===================== 快速首發監控（不開 Playwright，直打 HTML）=====================
 
@@ -1120,23 +1172,35 @@ def send_discord(webhook_url, content, image_path=None):
         print(f"  Discord 失敗：{e}")
 
 def load_stats(filepath):
-    db = get_mongo_db()
+    db = None
+    try:
+        db = get_mongo_db()
+    except Exception as e:
+        print(f"[Mongo] get_mongo_db 失敗，將使用本地備份: {e}")
+        
     if db is not None:
-        doc = db["market_stats"].find_one({"_id": _mongo_key(filepath)})
-        if doc:
-            doc.pop("_id", None)
-            if "records" not in doc:
-                doc["records"] = []
-            return doc
-        return {"count": 0, "cp1_sum": 0, "cp2_sum": 0, "cpw_sum": 0,
-                "price_sum": 0, "gold_char_sum": 0, "records": [], "last_updated": ""}
+        try:
+            doc = db["market_stats"].find_one({"_id": _mongo_key(filepath)})
+            if doc:
+                doc.pop("_id", None)
+                if "records" not in doc:
+                    doc["records"] = []
+                return doc
+            return {"count": 0, "cp1_sum": 0, "cp2_sum": 0, "cpw_sum": 0,
+                    "price_sum": 0, "gold_char_sum": 0, "records": [], "last_updated": ""}
+        except Exception as e:
+            print(f"[Mongo] 讀取 market_stats 失敗，改用本地備份: {e}")
+            
     # fallback: 本機 JSON
     if os.path.exists(filepath):
-        with open(filepath, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        if "records" not in data:
-            data["records"] = []
-        return data
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if "records" not in data:
+                data["records"] = []
+            return data
+        except Exception as ex:
+            print(f"[Fallback] 讀取本地 market_stats 失敗: {ex}")
     return {"count": 0, "cp1_sum": 0, "cp2_sum": 0, "cpw_sum": 0,
             "price_sum": 0, "gold_char_sum": 0, "records": [], "last_updated": ""}
 
@@ -1180,16 +1244,30 @@ def update_stats(stats, new_trades, filepath):
     # 不讓 records 無限展開。MongoDB 單文件限制 16MB，保留最近 2000 筆就夠
     stats["records"] = stats["records"][-2000:]
     stats["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M")
-    db = get_mongo_db()
+    db = None
+    try:
+        db = get_mongo_db()
+    except Exception as e:
+        print(f"[Mongo] get_mongo_db 失敗，將使用本地備份: {e}")
+        
+    success = False
     if db is not None:
-        db["market_stats"].replace_one(
-            {"_id": _mongo_key(filepath)},
-            {"_id": _mongo_key(filepath), **stats},
-            upsert=True
-        )
-    else:
-        with open(filepath, "w", encoding="utf-8") as f:
-            json.dump(stats, f, ensure_ascii=False, indent=2)
+        try:
+            db["market_stats"].replace_one(
+                {"_id": _mongo_key(filepath)},
+                {"_id": _mongo_key(filepath), **stats},
+                upsert=True
+            )
+            success = True
+        except Exception as e:
+            print(f"[Mongo] 寫入 market_stats 失敗，將寫入本地: {e}")
+            
+    if not success:
+        try:
+            with open(filepath, "w", encoding="utf-8") as f:
+                json.dump(stats, f, ensure_ascii=False, indent=2)
+        except Exception as ex:
+            print(f"[Fallback] 寫入本地 market_stats 失敗: {ex}")
     return stats
 
 def get_thresholds(stats):
@@ -1233,37 +1311,75 @@ def get_thresholds(stats):
     }
 
 def load_seen(filepath, key="urls"):
-    db = get_mongo_db()
+    db = None
+    try:
+        db = get_mongo_db()
+    except Exception as e:
+        print(f"[Mongo] get_mongo_db 失敗，將使用本地備份: {e}")
+        
     if db is not None:
-        doc = db["completed_seen"].find_one({"_id": _mongo_key(filepath)})
-        return set(doc.get(key, [])) if doc else set()
+        try:
+            doc = db["completed_seen"].find_one({"_id": _mongo_key(filepath)})
+            return set(doc.get(key, [])) if doc else set()
+        except Exception as e:
+            print(f"[Mongo] 讀取 completed_seen 失敗，改用本地備份: {e}")
+            
     if os.path.exists(filepath):
-        with open(filepath, "r", encoding="utf-8") as f:
-            return set(json.load(f).get(key, []))
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                return set(json.load(f).get(key, []))
+        except Exception as ex:
+            print(f"[Fallback] 讀取本地 completed_seen 失敗: {ex}")
     return set()
 
 def save_seen(filepath, seen, key="urls"):
-    db = get_mongo_db()
+    db = None
+    try:
+        db = get_mongo_db()
+    except Exception as e:
+        print(f"[Mongo] get_mongo_db 失敗，將使用本地備份: {e}")
+        
+    success = False
     if db is not None:
-        db["completed_seen"].replace_one(
-            {"_id": _mongo_key(filepath)},
-            {"_id": _mongo_key(filepath), key: list(seen),
-             "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M")},
-            upsert=True
-        )
-    else:
-        with open(filepath, "w", encoding="utf-8") as f:
-            json.dump({key: list(seen),
-                       "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M")}, f)
+        try:
+            db["completed_seen"].replace_one(
+                {"_id": _mongo_key(filepath)},
+                {"_id": _mongo_key(filepath), key: list(seen),
+                 "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M")},
+                upsert=True
+            )
+            success = True
+        except Exception as e:
+            print(f"[Mongo] 寫入 completed_seen 失敗，將寫入本地: {e}")
+            
+    if not success:
+        try:
+            with open(filepath, "w", encoding="utf-8") as f:
+                json.dump({key: list(seen),
+                           "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M")}, f)
+        except Exception as ex:
+            print(f"[Fallback] 寫入本地 completed_seen 失敗: {ex}")
 
 def load_sellers(filepath):
-    db = get_mongo_db()
+    db = None
+    try:
+        db = get_mongo_db()
+    except Exception as e:
+        print(f"[Mongo] get_mongo_db 失敗，將使用本地備份: {e}")
+        
     if db is not None:
-        doc = db["sellers"].find_one({"_id": _mongo_key(filepath)})
-        return doc.get("data", {}) if doc else {}
+        try:
+            doc = db["sellers"].find_one({"_id": _mongo_key(filepath)})
+            return doc.get("data", {}) if doc else {}
+        except Exception as e:
+            print(f"[Mongo] 讀取 sellers 失敗，改用本地備份: {e}")
+            
     if os.path.exists(filepath):
-        with open(filepath, "r", encoding="utf-8") as f:
-            return json.load(f)
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as ex:
+            print(f"[Fallback] 讀取本地 sellers 失敗: {ex}")
     return {}
 
 def update_sellers(sellers, trades, filepath):
@@ -1278,17 +1394,31 @@ def update_sellers(sellers, trades, filepath):
         sellers[sid]["titles"].append(r["title"][:30])
         sellers[sid]["prices"] = sellers[sid]["prices"][-50:]
         sellers[sid]["titles"] = sellers[sid]["titles"][-50:]
-    db = get_mongo_db()
+    db = None
+    try:
+        db = get_mongo_db()
+    except Exception as e:
+        print(f"[Mongo] get_mongo_db 失敗，將使用本地備份: {e}")
+        
+    success = False
     if db is not None:
-        db["sellers"].replace_one(
-            {"_id": _mongo_key(filepath)},
-            {"_id": _mongo_key(filepath), "data": sellers,
-             "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M")},
-            upsert=True
-        )
-    else:
-        with open(filepath, "w", encoding="utf-8") as f:
-            json.dump(sellers, f, ensure_ascii=False, indent=2)
+        try:
+            db["sellers"].replace_one(
+                {"_id": _mongo_key(filepath)},
+                {"_id": _mongo_key(filepath), "data": sellers,
+                 "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M")},
+                upsert=True
+            )
+            success = True
+        except Exception as e:
+            print(f"[Mongo] 寫入 sellers 失敗，將寫入本地: {e}")
+            
+    if not success:
+        try:
+            with open(filepath, "w", encoding="utf-8") as f:
+                json.dump(sellers, f, ensure_ascii=False, indent=2)
+        except Exception as ex:
+            print(f"[Fallback] 寫入本地 sellers 失敗: {ex}")
     return sellers
 
 def init_excel(filepath):
