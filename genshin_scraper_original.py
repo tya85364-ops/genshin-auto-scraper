@@ -411,9 +411,19 @@ def get_gsheet():
     p1 = os.environ.get("GCP_KEY_PART_1", "").strip()
     if p1:
         import base64
+        import re
         b64 = p1 + os.environ.get("GCP_KEY_PART_2","").strip() + os.environ.get("GCP_KEY_PART_3","").strip()
         b64 += "=" * ((-len(b64)) % 4)
-        info = json.loads(base64.b64decode(b64).decode("utf-8"))
+        decoded = base64.b64decode(b64).decode("utf-8")
+        
+        # 修正私鑰中的真實換行符，避免 JSON 解析失敗
+        def repl(match):
+            val = match.group(1)
+            val = val.replace("\r", "").replace("\n", "\\n")
+            return f'"private_key": "{val}"'
+        decoded = re.sub(r'"private_key"\s*:\s*"([^"]*)"', repl, decoded, flags=re.DOTALL)
+        
+        info = json.loads(decoded)
         print(f"[GCP] 使用 GCP_KEY_PART 三段組合，project={info.get('project_id','?')}")
         creds = Credentials.from_service_account_info(info, scopes=scopes)
         return gspread.authorize(creds)

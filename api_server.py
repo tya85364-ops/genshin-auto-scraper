@@ -39,6 +39,15 @@ def _setup_gcp_key():
     key_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gcp_key.json")
     try:
         decoded = base64.b64decode(b64).decode("utf-8")
+        
+        # 修正私鑰中的真實換行符，避免 JSON 解析失敗
+        import re
+        def repl(match):
+            val = match.group(1)
+            val = val.replace("\r", "").replace("\n", "\\n")
+            return f'"private_key": "{val}"'
+        decoded = re.sub(r'"private_key"\s*:\s*"([^"]*)"', repl, decoded, flags=re.DOTALL)
+        
         json.loads(decoded)  # 驗證 JSON 正確
         with open(key_path, "w", encoding="utf-8") as f:
             f.write(decoded)
@@ -171,9 +180,19 @@ def gcp_status():
     if combined_b64:
         try:
             decoded = base64.b64decode(padded_b64).decode("utf-8")
-            status_info["decoded_len"] = len(decoded)
-            status_info["decoded_preview"] = decoded[:30] + "..." + decoded[-30:]
-            json.loads(decoded)
+            status_info["raw_decoded_len"] = len(decoded)
+            
+            # 嘗試進行清洗
+            import re
+            def repl(match):
+                val = match.group(1)
+                val = val.replace("\r", "").replace("\n", "\\n")
+                return f'"private_key": "{val}"'
+            clean_decoded = re.sub(r'"private_key"\s*:\s*"([^"]*)"', repl, decoded, flags=re.DOTALL)
+            
+            status_info["decoded_len"] = len(clean_decoded)
+            status_info["decoded_preview"] = clean_decoded[:30] + "..." + clean_decoded[-30:]
+            json.loads(clean_decoded)
             status_info["json_valid"] = True
         except Exception as ex:
             status_info["json_valid"] = False
