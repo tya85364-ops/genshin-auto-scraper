@@ -416,10 +416,11 @@ def get_gsheet():
         b64 += "=" * ((-len(b64)) % 4)
         decoded = base64.b64decode(b64).decode("utf-8")
         
-        # 修正私鑰中的真實換行符，避免 JSON 解析失敗
+        # 修正私鑰中的真實換行符與非法的不可見控制字元，避免 JSON 解析失敗
         def repl(match):
             val = match.group(1)
             val = val.replace("\r", "").replace("\n", "\\n")
+            val = "".join(c for c in val if ord(c) >= 32)
             return f'"private_key": "{val}"'
         decoded = re.sub(r'"private_key"\s*:\s*"([^"]*)"', repl, decoded, flags=re.DOTALL)
         
