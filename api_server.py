@@ -149,10 +149,14 @@ def get_log(name):
     log_file = os.path.join(BASE, "logs", f"{name}.log")
     if not os.path.exists(log_file):
         return jsonify({"status": "ok", "content": "Log file empty or not found"}), 200
+    
+    # 支援 lines 參數，預設回傳 1000 行
+    lines_to_read = request.args.get('lines', default=1000, type=int)
+    
     try:
         with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
             lines = f.readlines()
-            content = "".join(lines[-200:])
+            content = "".join(lines[-lines_to_read:])
         return jsonify({"status": "ok", "content": content}), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
