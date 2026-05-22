@@ -3,6 +3,7 @@ import json
 import base64
 import subprocess
 import sys
+from datetime import datetime
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pymongo import MongoClient
@@ -54,17 +55,29 @@ def start_workers():
     """Start scraper and Discord bot as background subprocesses."""
     procs = []
     
+    # Create logs directory
+    log_dir = os.path.join(BASE, "logs")
+    os.makedirs(log_dir, exist_ok=True)
+    
     discord_path = os.path.join(BASE, "discord_bot.py")
     if os.path.exists(discord_path):
+        discord_log_path = os.path.join(log_dir, "discord_bot.log")
+        with open(discord_log_path, "w", encoding="utf-8") as f:
+            f.write(f"=== Discord Bot Started at {datetime.now()} ===\n")
+        discord_log = open(discord_log_path, "a", encoding="utf-8")
         p = subprocess.Popen([sys.executable, discord_path],
-                             stdout=sys.stdout, stderr=sys.stderr)
+                             stdout=discord_log, stderr=discord_log)
         procs.append(("discord_bot", p))
         print(f"[API] Discord bot started (pid={p.pid})")
     
     scraper_path = os.path.join(BASE, "genshin_scraper_original.py")
     if os.path.exists(scraper_path):
+        scraper_log_path = os.path.join(log_dir, "scraper.log")
+        with open(scraper_log_path, "w", encoding="utf-8") as f:
+            f.write(f"=== Scraper Started at {datetime.now()} ===\n")
+        scraper_log = open(scraper_log_path, "a", encoding="utf-8")
         p = subprocess.Popen([sys.executable, scraper_path],
-                             stdout=sys.stdout, stderr=sys.stderr)
+                             stdout=scraper_log, stderr=scraper_log)
         procs.append(("scraper", p))
         print(f"[API] Scraper started (pid={p.pid})")
     
@@ -112,6 +125,21 @@ def delete_target(url):
     db = get_db()
     db["custom_targets"].delete_one({"_id": url})
     return jsonify({"status": "ok"}), 200
+
+@app.route('/api/logs/<name>', methods=['GET'])
+def get_log(name):
+    if name not in ["scraper", "discord_bot"]:
+        return jsonify({"status": "error", "message": "Invalid log name"}), 400
+    log_file = os.path.join(BASE, "logs", f"{name}.log")
+    if not os.path.exists(log_file):
+        return jsonify({"status": "ok", "content": "Log file empty or not found"}), 200
+    try:
+        with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
+            lines = f.readlines()
+            content = "".join(lines[-200:])
+        return jsonify({"status": "ok", "content": content}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 # ─── Entry point ────────────────────────────────────────────────────────────
 # Called at module level so gunicorn --preload also triggers it
