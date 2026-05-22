@@ -236,6 +236,49 @@ def process_status():
         info["ps_aux_error"] = str(e)
     return jsonify(info), 200
 
+@app.route('/api/run_scraper_manual', methods=['GET'])
+def run_scraper_manual():
+    import subprocess
+    import sys
+    
+    # 檢查有沒有正在跑的 genshin_scraper_original
+    running = False
+    try:
+        ps_out = subprocess.check_output(["ps", "aux"]).decode("utf-8")
+        if "genshin_scraper_original.py" in ps_out:
+            running = True
+    except Exception as e:
+        ps_out = str(e)
+        
+    if running:
+        return jsonify({
+            "status": "already_running", 
+            "message": "Scraper is already running in background",
+            "ps_aux": ps_out if "ps_out" in locals() else None
+        }), 200
+        
+    # 手動啟動
+    try:
+        log_dir = os.path.join(BASE, "logs")
+        os.makedirs(log_dir, exist_ok=True)
+        
+        scraper_path = os.path.join(BASE, "genshin_scraper_original.py")
+        scraper_log_path = os.path.join(log_dir, "scraper.log")
+        with open(scraper_log_path, "w", encoding="utf-8") as f:
+            f.write(f"=== Scraper Started Manually at {datetime.now()} ===\n")
+        scraper_log = open(scraper_log_path, "a", encoding="utf-8")
+        
+        p = subprocess.Popen([sys.executable, scraper_path],
+                             stdout=scraper_log, stderr=scraper_log)
+                             
+        return jsonify({
+            "status": "started", 
+            "pid": p.pid, 
+            "message": "Scraper started successfully in background"
+        }), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 # ─── Entry point ────────────────────────────────────────────────────────────
 # Called at module level so gunicorn --preload also triggers it
 _workers_started = False
