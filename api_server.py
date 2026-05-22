@@ -13,9 +13,12 @@ CORS(app)
 
 MONGO_URI = os.environ.get("MONGODB_URI", "mongodb+srv://genshin:genshin123@cluster0.svtlvs0.mongodb.net/scraper_db?appName=Cluster0")
 
+GCP_KEY_STATUS = "Not started"
+
 # ─── 啟動時解碼 GCP Key ───────────────────────────────────────────────────────
 def _setup_gcp_key():
     """將 GCP key 解碼成 gcp_key.json（支援三段拼接，避免 Railway 截斷）"""
+    global GCP_KEY_STATUS
     # 優先用三段拼接（最穩定，每段 ~1000 字，Railway 不會截斷）
     p1 = os.environ.get("GCP_KEY_PART_1", "").strip()
     p2 = os.environ.get("GCP_KEY_PART_2", "").strip()
@@ -27,10 +30,11 @@ def _setup_gcp_key():
         b64 = os.environ.get("GCP_KEY_B64", "").strip()
 
     if not b64:
+        GCP_KEY_STATUS = "WARNING: No GCP_KEY_PART_1 or GCP_KEY_B64"
         print("[API] 無 GCP_KEY_PART_1 也無 GCP_KEY_B64，略過 gcp_key.json 寫入")
         return
 
-    # 補回 Railway 可能截掉的 base64 padding
+    # 補回 Railway 可能截掉 the base64 padding
     b64 += "=" * ((-len(b64)) % 4)
     key_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gcp_key.json")
     try:
@@ -38,8 +42,10 @@ def _setup_gcp_key():
         json.loads(decoded)  # 驗證 JSON 正確
         with open(key_path, "w", encoding="utf-8") as f:
             f.write(decoded)
-        print(f"[API] gcp_key.json written OK ({len(decoded)} chars)")
+        GCP_KEY_STATUS = f"SUCCESS: gcp_key.json written OK ({len(decoded)} chars)"
+        print(f"[API] {GCP_KEY_STATUS}")
     except Exception as e:
+        GCP_KEY_STATUS = f"ERROR: {e}"
         print(f"[API] ERROR writing gcp_key.json: {e}")
 
 _setup_gcp_key()
@@ -140,6 +146,40 @@ def get_log(name):
         return jsonify({"status": "ok", "content": content}), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/gcp_status', methods=['GET'])
+def gcp_status():
+    p1 = os.environ.get("GCP_KEY_PART_1", "")
+    p2 = os.environ.get("GCP_KEY_PART_2", "")
+    p3 = os.environ.get("GCP_KEY_PART_3", "")
+    
+    combined_b64 = p1.strip() + p2.strip() + p3.strip()
+    padded_b64 = combined_b64 + "=" * ((-len(combined_b64)) % 4)
+    
+    status_info = {
+        "status": GCP_KEY_STATUS,
+        "p1_len": len(p1),
+        "p2_len": len(p2),
+        "p3_len": len(p3),
+        "combined_b64_len": len(combined_b64),
+        "padded_b64_len": len(padded_b64),
+        "p1_preview": p1[:10] + "..." + p1[-10:] if p1 else "empty",
+        "p2_preview": p2[:10] + "..." + p2[-10:] if p2 else "empty",
+        "p3_preview": p3[:10] + "..." + p3[-10:] if p3 else "empty"
+    }
+    
+    if combined_b64:
+        try:
+            decoded = base64.b64decode(padded_b64).decode("utf-8")
+            status_info["decoded_len"] = len(decoded)
+            status_info["decoded_preview"] = decoded[:30] + "..." + decoded[-30:]
+            json.loads(decoded)
+            status_info["json_valid"] = True
+        except Exception as ex:
+            status_info["json_valid"] = False
+            status_info["json_error"] = str(ex)
+            
+    return jsonify(status_info), 200
 
 # ─── Entry point ────────────────────────────────────────────────────────────
 # Called at module level so gunicorn --preload also triggers it
