@@ -279,6 +279,53 @@ def run_scraper_manual():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route('/api/gcp_key_diagnose', methods=['GET'])
+def gcp_key_diagnose():
+    p1 = os.environ.get("GCP_KEY_PART_1", "")
+    p2 = os.environ.get("GCP_KEY_PART_2", "")
+    p3 = os.environ.get("GCP_KEY_PART_3", "")
+    combined_b64 = p1.strip() + p2.strip() + p3.strip()
+    padded_b64 = combined_b64 + "=" * ((-len(combined_b64)) % 4)
+    
+    try:
+        import base64
+        import json
+        decoded = base64.b64decode(padded_b64).decode("utf-8")
+    except Exception as e:
+        return jsonify({"error_base64": str(e)}), 500
+        
+    try:
+        import re
+        def repl(match):
+            val = match.group(1)
+            val = val.replace("\r", "").replace("\n", "\\n")
+            val = "".join(c for c in val if ord(c) >= 32)
+            return f'"private_key": "{val}"'
+        clean_decoded = re.sub(r'"private_key"\s*:\s*"([^"]*)"', repl, decoded, flags=re.DOTALL)
+        clean_info = json.loads(clean_decoded)
+        
+        pk = clean_info.get("private_key", "")
+        pk_len = len(pk)
+        
+        invalid_bytes = []
+        for i, c in enumerate(pk):
+            if c in ["{", "}", "[", "]", ":"]:
+                invalid_bytes.append({
+                    "pos": i, 
+                    "char": c, 
+                    "surround": pk[max(0, i-20):min(len(pk), i+20)]
+                })
+                
+        diagnose = {
+            "pk_length": pk_len,
+            "pk_start": pk[:50],
+            "pk_end": pk[-50:],
+            "invalid_bytes_found": invalid_bytes
+        }
+        return jsonify(diagnose), 200
+    except Exception as e:
+        return jsonify({"error_json": str(e)}), 500
+
 # ─── Entry point ────────────────────────────────────────────────────────────
 # Called at module level so gunicorn --preload also triggers it
 _workers_started = False
