@@ -218,6 +218,24 @@ def gcp_status():
             
     return jsonify(status_info), 200
 
+@app.route('/api/process_status', methods=['GET'])
+def process_status():
+    import subprocess
+    import sys
+    info = {
+        "python_executable": sys.executable,
+        "pid": os.getpid(),
+        "ppid": os.getppid(),
+        "workers_started_var": _workers_started,
+        "env_port": os.environ.get("PORT", "not set")
+    }
+    try:
+        ps_out = subprocess.check_output(["ps", "aux"]).decode("utf-8")
+        info["ps_aux"] = ps_out
+    except Exception as e:
+        info["ps_aux_error"] = str(e)
+    return jsonify(info), 200
+
 # ─── Entry point ────────────────────────────────────────────────────────────
 # Called at module level so gunicorn --preload also triggers it
 _workers_started = False
