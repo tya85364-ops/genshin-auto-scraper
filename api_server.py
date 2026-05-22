@@ -51,6 +51,18 @@ def _setup_gcp_key():
             val = match.group(1)
             val = val.replace("\r", "").replace("\n", "\\n")
             val = "".join(c for c in val if ord(c) >= 32)
+            
+            # 終極 PEM 淨化：對金鑰內容只保留 BEGIN/END 與合法 Base64 字元
+            lines = val.split("\\n")
+            cleaned_lines = []
+            for line in lines:
+                if "BEGIN PRIVATE KEY" in line or "END PRIVATE KEY" in line:
+                    cleaned_lines.append(line)
+                else:
+                    clean_line = "".join(c for c in line if c.isalnum() or c in ["+", "/", "="])
+                    if clean_line:
+                        cleaned_lines.append(clean_line)
+            val = "\\n".join(cleaned_lines)
             return f'"private_key": "{val}"'
         decoded = re.sub(r'"private_key"\s*:\s*"([^"]*)"', repl, decoded, flags=re.DOTALL)
         
@@ -203,6 +215,18 @@ def gcp_status():
                 val = match.group(1)
                 val = val.replace("\r", "").replace("\n", "\\n")
                 val = "".join(c for c in val if ord(c) >= 32)
+                
+                # 終極 PEM 淨化：對金鑰內容只保留 BEGIN/END 與合法 Base64 字元
+                lines = val.split("\\n")
+                cleaned_lines = []
+                for line in lines:
+                    if "BEGIN PRIVATE KEY" in line or "END PRIVATE KEY" in line:
+                        cleaned_lines.append(line)
+                    else:
+                        clean_line = "".join(c for c in line if c.isalnum() or c in ["+", "/", "="])
+                        if clean_line:
+                            cleaned_lines.append(clean_line)
+                val = "\\n".join(cleaned_lines)
                 return f'"private_key": "{val}"'
             clean_decoded = re.sub(r'"private_key"\s*:\s*"([^"]*)"', repl, decoded, flags=re.DOTALL)
             
