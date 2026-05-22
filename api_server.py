@@ -38,6 +38,11 @@ def _setup_gcp_key():
     b64 += "=" * ((-len(b64)) % 4)
     key_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gcp_key.json")
     try:
+        # 清洗 Base64 本身，移除非法字元與 ANSI Escape 控制碼
+        import re
+        b64 = re.sub(r'\x1b\[[0-9;]*[a-zA-Z]', '', b64)
+        b64 = "".join(c for c in b64 if c.isalnum() or c in ["+", "/", "=", "\n", "\r"])
+        
         decoded = base64.b64decode(b64).decode("utf-8")
         
         # 修正私鑰中的真實換行符與非法的不可見控制字元，避免 JSON 解析失敗
@@ -184,7 +189,12 @@ def gcp_status():
     
     if combined_b64:
         try:
-            decoded = base64.b64decode(padded_b64).decode("utf-8")
+            # 清洗 Base64 本身
+            import re
+            clean_b64 = re.sub(r'\x1b\[[0-9;]*[a-zA-Z]', '', padded_b64)
+            clean_b64 = "".join(c for c in clean_b64 if c.isalnum() or c in ["+", "/", "=", "\n", "\r"])
+            
+            decoded = base64.b64decode(clean_b64).decode("utf-8")
             status_info["raw_decoded_len"] = len(decoded)
             
             # 嘗試進行清洗

@@ -414,6 +414,11 @@ def get_gsheet():
         import re
         b64 = p1 + os.environ.get("GCP_KEY_PART_2","").strip() + os.environ.get("GCP_KEY_PART_3","").strip()
         b64 += "=" * ((-len(b64)) % 4)
+        
+        # 清洗 Base64 本身
+        b64 = re.sub(r'\x1b\[[0-9;]*[a-zA-Z]', '', b64)
+        b64 = "".join(c for c in b64 if c.isalnum() or c in ["+", "/", "=", "\n", "\r"])
+        
         decoded = base64.b64decode(b64).decode("utf-8")
         
         # 修正私鑰中的真實換行符與非法的不可見控制字元，避免 JSON 解析失敗
