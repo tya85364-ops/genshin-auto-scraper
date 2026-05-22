@@ -178,6 +178,18 @@ def gcp_status():
         except Exception as ex:
             status_info["json_valid"] = False
             status_info["json_error"] = str(ex)
+            import re
+            m = re.search(r"char (\d+)", str(ex))
+            if m:
+                pos = int(m.group(1))
+                start = max(0, pos - 50)
+                end = min(len(decoded), pos + 50)
+                snippet = decoded[start:end]
+                status_info["error_snippet"] = snippet
+                status_info["error_snippet_hex"] = [hex(ord(c)) for c in snippet]
+                if pos < len(decoded):
+                    status_info["error_char"] = decoded[pos]
+                    status_info["error_char_hex"] = hex(ord(decoded[pos]))
             
     return jsonify(status_info), 200
 
