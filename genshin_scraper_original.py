@@ -19,8 +19,24 @@ except ImportError:
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+def _env_int(name, default, minimum=0):
+    try:
+        value = int(os.getenv(name, str(default)))
+    except (TypeError, ValueError):
+        value = default
+    return max(minimum, value)
+
+def _env_bool(name, default=False):
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
 BASE_URL = "https://www.8591.com.tw"
-MAX_PAGES = 10
+MAX_PAGES = _env_int("MAX_PAGES", 5, minimum=1)
+SCRAPE_INTERVAL_MINUTES = _env_int("SCRAPE_INTERVAL_MINUTES", 120, minimum=1)
+FAST_SCAN_INTERVAL_MINUTES = _env_int("FAST_SCAN_INTERVAL_MINUTES", 0, minimum=0)
+ENABLE_STARTUP_CHARTS = _env_bool("ENABLE_STARTUP_CHARTS", False)
 TRASH_KEYWORDS = ["徵", "代練", "初始號"]
 BIG_SELLER_THRESHOLD = 5
 RECENT_DAYS = 10
@@ -2024,14 +2040,20 @@ if __name__ == "__main__":
         run_scrape()
         print("[--once] Done.")
     else:
-        print("排程啟動，每30分鐘執行一次（立即先跑一次）")
-        print("快速監控：每2分鐘掃一次首頁新上架（不用 Playwright，超輕量）")
-        # 首次啟動：為展示新功能，強制發送一次趨勢週報
-        run_trend_charts(GAMES)
+        print("Scheduler starting. The scraper will run once immediately.")
+        print("Runtime intervals are controlled by Railway environment variables.")
+        print(f"Scheduler interval: scrape every {SCRAPE_INTERVAL_MINUTES} minutes.")
+        if FAST_SCAN_INTERVAL_MINUTES > 0:
+            print(f"Fast scan interval: every {FAST_SCAN_INTERVAL_MINUTES} minutes.")
+        else:
+            print("Fast scan disabled. Set FAST_SCAN_INTERVAL_MINUTES > 0 to enable it.")
+        if ENABLE_STARTUP_CHARTS:
+            run_trend_charts(GAMES)
 
         run_scrape()
-        schedule.every(30).minutes.do(run_scrape)
-        schedule.every(2).minutes.do(lambda: fast_track_scan(GAMES))
+        schedule.every(SCRAPE_INTERVAL_MINUTES).minutes.do(run_scrape)
+        if FAST_SCAN_INTERVAL_MINUTES > 0:
+            schedule.every(FAST_SCAN_INTERVAL_MINUTES).minutes.do(lambda: fast_track_scan(GAMES))
         schedule.every().sunday.at("20:00").do(lambda: run_trend_charts(GAMES))
 
         while True:

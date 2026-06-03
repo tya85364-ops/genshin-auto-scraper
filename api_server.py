@@ -93,7 +93,7 @@ def start_workers():
     os.makedirs(log_dir, exist_ok=True)
     
     discord_path = os.path.join(BASE, "discord_bot.py")
-    if os.path.exists(discord_path):
+    if os.getenv("START_DISCORD_BOT", "1").strip().lower() in {"1", "true", "yes", "on"} and os.path.exists(discord_path):
         discord_log_path = os.path.join(log_dir, "discord_bot.log")
         with open(discord_log_path, "w", encoding="utf-8") as f:
             f.write(f"=== Discord Bot Started at {datetime.now()} ===\n")
@@ -102,9 +102,11 @@ def start_workers():
                              stdout=discord_log, stderr=discord_log)
         procs.append(("discord_bot", p))
         print(f"[API] Discord bot started (pid={p.pid})")
+    else:
+        print("[API] Discord bot autostart disabled")
     
     scraper_path = os.path.join(BASE, "genshin_scraper_original.py")
-    if os.path.exists(scraper_path):
+    if os.getenv("START_SCRAPER", "1").strip().lower() in {"1", "true", "yes", "on"} and os.path.exists(scraper_path):
         scraper_log_path = os.path.join(log_dir, "scraper.log")
         with open(scraper_log_path, "w", encoding="utf-8") as f:
             f.write(f"=== Scraper Started at {datetime.now()} ===\n")
@@ -113,6 +115,8 @@ def start_workers():
                              stdout=scraper_log, stderr=scraper_log)
         procs.append(("scraper", p))
         print(f"[API] Scraper started (pid={p.pid})")
+    else:
+        print("[API] Scraper autostart disabled")
     
     return procs
 
