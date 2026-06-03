@@ -825,7 +825,7 @@ def fast_fetch_listings(list_url):
         soup = BeautifulSoup(r.content, "html.parser")
         listings = []
         # 嘗試抓商品區塊（8591 的 HTML 結構）
-        items = soup.select(".list-item-line") or soup.select("[class*='item-box']") or soup.select(".commodity-list li")
+        items = soup.select("div.list-item") or soup.select("[class*='item-box']") or soup.select(".commodity-list li")
         for it in items:
             a = it.select_one("a.fc1, a.show-title, a[href*='/v3/mall/detail/']")
             if not a:
@@ -835,12 +835,18 @@ def fast_fetch_listings(list_url):
                 href = "https://www.8591.com.tw" + href
             title = a.get("title", "") or a.get_text(strip=True)
             # 抓價格
-            price_tag = it.select_one("[class*='price'], .price, .fc-red")
+            price_tag = it.select_one("div.list-item-price, span.orange, [class*='price'], .price, .fc-red")
             price_str = price_tag.get_text(strip=True).replace(",", "").replace("$", "").strip() if price_tag else "0"
             try:
                 price = int("".join(filter(str.isdigit, price_str)) or "0")
             except:
                 price = 0
+            if price <= 0:
+                im = it.select_one("a[href^='im://']")
+                if im:
+                    m = re.search(r'price=([\d,]+)', im.get("href", ""))
+                    if m:
+                        price = int(m.group(1).replace(",", ""))
             if href and price > 0:
                 listings.append({"url": href, "title": title, "price": price})
         return listings
